@@ -47,3 +47,87 @@ pg14=# show transaction isolation level;
 -----------------------
  read committed
  ```
+Начинаем новую транзакцию в обоих сессиях с дефолтным уровнем изоляции.  
+В первой сессии добавляем новую запись:
+```console
+pg14=# begin;
+BEGIN
+pg14=*# insert into persons(first_name, second_name) values('sergey', 'sergeev');
+INSERT 0 1
+pg14=*# commit;
+COMMIT
+ ```
+Во второй сесси выпоняем:
+```console
+pg14=*# select * from persons;
+ id | first_name | second_name 
+----+------------+-------------
+  1 | ivan       | ivanov
+  2 | petr       | petrov
+(2 rows)
+ ```
+Вставку новой записи не видим, так как не завершена транзакция в первой сесии.
+
+После завершения первой транзакции во второй сесси:
+```console
+pg14=*# select * from persons;
+ id | first_name | second_name 
+----+------------+-------------
+  1 | ivan       | ivanov
+  2 | petr       | petrov
+  3 | sergey     | sergeev
+(3 rows)
+ ```
+Начинаем новые но уже repeatable read транзации:
+```console
+pg14=# BEGIN ISOLATION LEVEL REPEATABLE READ;
+BEGIN
+ ```
+В первой сессии добавляем новую запись insert into persons(first_name, second_name) values('sveta', 'svetova');
+```console
+pg14=*# insert into persons(first_name, second_name) values('sveta', 'svetova');
+INSERT 0 1
+ ```
+Во второй сессии:
+```console
+pg14=*# select * from persons;
+ id | first_name | second_name 
+----+------------+-------------
+  1 | ivan       | ivanov
+  2 | petr       | petrov
+  3 | sergey     | sergeev
+(3 rows)
+ ```
+Новую запись не видим во воторой сесии, так как ISOLATION LEVEL REPEATABLE READ
+
+Завершаем первую транзакцию:
+```console
+pg14=*# commit;
+COMMIT
+ ```
+Во второй сессии:
+```console
+pg14=*# select * from persons;
+ id | first_name | second_name 
+----+------------+-------------
+  1 | ivan       | ivanov
+  2 | petr       | petrov
+  3 | sergey     | sergeev
+(3 rows)
+ ```
+Новую запись не видим во воторой сесии, так как ISOLATION LEVEL REPEATABLE READ
+
+Завершаем вторую транзакцию и выполняем select * from persons:
+```console
+pg14=*# commit ;
+COMMIT
+pg14=# select * from persons;
+ id | first_name | second_name 
+----+------------+-------------
+  1 | ivan       | ivanov
+  2 | petr       | petrov
+  3 | sergey     | sergeev
+  4 | sveta      | svetova
+(4 rows)
+ ```
+Новую запись видим во воторой сесии, так как на уровне repeatable read снимок строится в начале транзакции — поэтому все запросы в одной транзакции видят одни и те же данные.
