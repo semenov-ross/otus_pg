@@ -25,3 +25,25 @@ yum -y install postgresql14 postgresql14-server
 systemctl start postgresql-14.service
 systemctl enable postgresql-14.service
 ```
+Создаем БД pg14, подключаемся к ней и создаем таблицу persons, наполняя её данными:
+```console
+postgres=# CREATE DATABASE pg14;
+postgres=# \c pg14
+pg14=# \set AUTOCOMMIT OFF
+pg14=# create table persons(id serial, first_name text, second_name text);
+CREATE TABLE
+pg14=*# insert into persons(first_name, second_name) values('ivan', 'ivanov');
+INSERT 0 1
+pg14=*# insert into persons(first_name, second_name) values('petr', 'petrov');
+INSERT 0 1
+pg14=*# commit;
+COMMIT
+
+```
+Смотрим текущий уровень изоляции:
+```console
+pg14=# show transaction isolation level;
+ transaction_isolation 
+-----------------------
+ read committed
+ ```
