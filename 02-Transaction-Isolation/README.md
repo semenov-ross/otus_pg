@@ -57,7 +57,7 @@ INSERT 0 1
 pg14=*# commit;
 COMMIT
  ```
-Во второй сесси выпоняем:
+Во второй сесси выполняем:
 ```console
 pg14=*# select * from persons;
  id | first_name | second_name 
