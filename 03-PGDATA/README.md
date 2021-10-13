@@ -1,6 +1,6 @@
 # Физический уровень PostgreSQL
 
-## Установка и настройка PostgreSQL
+### Установка и настройка PostgreSQL
 
 В Google Cloud Platform создана ВМ pg14:
 ```console
