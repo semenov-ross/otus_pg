@@ -78,3 +78,16 @@ otus=# select * from test;
  1
 (1 row)
 ```
+Для корректного запуска сервиса postgresql-14.service необходимо изменить переменную PGDATA в конфигурационном файле сервиса:
+```console
+[root@pg14 ~]# systemctl edit postgresql-14.service
+[Service]
+Environment=PGDATA=/mnt/data/14/data/
+
+[root@pg14 ~]# systemctl cat postgresql-14.service
+...
+
+# /etc/systemd/system/postgresql-14.service.d/override.conf
+[Service]
+Environment=PGDATA=/mnt/data/14/data/
+```
