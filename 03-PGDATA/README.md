@@ -46,3 +46,7 @@ sdb      8:16   0   10G  0 disk
 [root@pg14 ~]# echo "`blkid | grep '/dev/sdb1' | awk '{print $2}'` /mnt/data ext4 defaults 0 2" >> /etc/fstab
 [root@pg14 ~]# mount -av
 ```
+Делаем пользователя postgres владельцем /mnt/data:
+```console
+[root@pg14 ~]# chown -R postgres.postgres /mnt/data/
+```
