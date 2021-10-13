@@ -101,5 +101,6 @@ gcloud compute instances create pg14-1 ...
 Перемонтируйте внешний диск disk-pgtbl1 от pg14 к pg14-1.
 для pg14:
 >VM instances -> VM instance details -> EDIT ->  Additional disks -> delete existing disk (disk-pgtbl1)
+
 для pg14-1:
 >VM instances -> VM instance details -> EDIT ->  Additional disks -> Attach existing disk (disk-pgtbl1)
