@@ -154,7 +154,7 @@ drwx------. 2 postgres postgres  4096 Oct 13 05:33 pg_xact
 -rw-------. 1 postgres postgres    27 Oct 13 10:26 postmaster.opts
 -rw-------. 1 postgres postgres   103 Oct 13 10:26 postmaster.pid
 ```
-Запускаем сервер и проверям ранее созданную таблицу в базе otus:
+Запускаем сервер и проверяем ранее созданную таблицу в базе otus:
 ```console
 -bash-4.2$ /usr/pgsql-14/bin/pg_ctl start
 
