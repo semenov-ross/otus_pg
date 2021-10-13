@@ -91,3 +91,15 @@ Environment=PGDATA=/mnt/data/14/data/
 [Service]
 Environment=PGDATA=/mnt/data/14/data/
 ```
+
+### Задание *
+
+Выключаем ВМ pg14, создаём новую pg14-1, устанавливаем PostgreSQL 14
+```console
+gcloud compute instances create pg14-1 ...
+```
+Перемонтируйте внешний диск disk-pgtbl1 от pg14 к pg14-1.
+для pg14:
+>VM instances -> VM instance details -> EDIT ->  Additional disks -> delete existing disk (disk-pgtbl1)
+для pg14-1:
+>VM instances -> VM instance details -> EDIT ->  Additional disks -> Attach existing disk (disk-pgtbl1)
