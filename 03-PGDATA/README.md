@@ -28,7 +28,7 @@ insert into test values('1');
 gcloud beta compute disks create disk-pgtbl1 --project=core-catalyst-328410 --type=pd-ssd --size=10GB --zone=us-central1-a
 ```
 Добавляем диск к виртуальной машине:
->VM instances -> VM instance details -> EDIT ->  Additional disks -> Attach existing disk
+>VM instances -> VM instance details -> EDIT ->  Additional disks -> Attach existing disk (disk-pgtbl1)
 
 Инициализируем диск в ОС:
 ```console
@@ -49,4 +49,32 @@ sdb      8:16   0   10G  0 disk
 Делаем пользователя postgres владельцем /mnt/data:
 ```console
 [root@pg14 ~]# chown -R postgres.postgres /mnt/data/
+```
+Изменяем переменную окружения PGDATA в файле профиля пользователя postgres:
+```console
+-bash-4.2$ cat .bash_profile 
+...
+#PGDATA=/var/lib/pgsql/14/data
+PGDATA=/mnt/data/14/data
+...
+```
+Запускаем кластер, подключаемся через psql и проверяем содержимое ранее созданной таблицы:
+```console
+-bash-4.2$ /usr/pgsql-14/bin/pg_ctl start
+waiting for server to start....2021-10-13 07:56:36.622 UTC [16161] LOG:  redirecting log output to logging collector process
+2021-10-13 07:56:36.622 UTC [16161] HINT:  Future log output will appear in directory "log".
+ done
+server started
+
+-bash-4.2$ psql 
+psql (14.0)
+Type "help" for help.
+
+postgres=# \c otus 
+You are now connected to database "otus" as user "postgres".
+otus=# select * from test;
+ c1 
+----
+ 1
+(1 row)
 ```
