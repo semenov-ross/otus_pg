@@ -6,7 +6,7 @@
 ```console
 gcloud compute instances create pg14 ...
 ```
-После установки PostgreSQL 14 проверяем сосотояние кластера:
+После установки PostgreSQL 14 проверяем сосотояние сервера:
 ```console
 -bash-4.2$ /usr/pgsql-14/bin/pg_ctl status
 pg_ctl: server is running (PID: 1625)
@@ -19,7 +19,7 @@ CREATE DATABASE otus;
 create table test(c1 text);
 insert into test values('1');
 ```
-Останавливаем кластер:
+Останавливаем сервер:
 ```console
 -bash-4.2$ /usr/pgsql-14/bin/pg_ctl stop
 ```
@@ -58,7 +58,7 @@ sdb      8:16   0   10G  0 disk
 PGDATA=/mnt/data/14/data
 ...
 ```
-Запускаем кластер, подключаемся через psql и проверяем содержимое ранее созданной таблицы:
+Запускаем сервер, подключаемся через psql и проверяем содержимое ранее созданной таблицы:
 ```console
 -bash-4.2$ /usr/pgsql-14/bin/pg_ctl start
 waiting for server to start....2021-10-13 07:56:36.622 UTC [16161] LOG:  redirecting log output to logging collector process
@@ -154,7 +154,7 @@ drwx------. 2 postgres postgres  4096 Oct 13 05:33 pg_xact
 -rw-------. 1 postgres postgres    27 Oct 13 10:26 postmaster.opts
 -rw-------. 1 postgres postgres   103 Oct 13 10:26 postmaster.pid
 ```
-Запускаем кластер и проверям ранее созданную таблицу в базе otus:
+Запускаем сервер и проверям ранее созданную таблицу в базе otus:
 ```console
 -bash-4.2$ /usr/pgsql-14/bin/pg_ctl start
 
