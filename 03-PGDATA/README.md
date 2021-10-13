@@ -105,3 +105,80 @@ gcloud compute instances create pg14-1 ...
 
 для pg14-1:
 >VM instances -> VM instance details -> EDIT ->  Additional disks -> Attach existing disk (disk-pgtbl1)
+
+Сохраняем файл профиля пользователя postgres и удаляем данные из /var/lib/pgsql
+```console
+[root@pg14-1 ~]# cp /var/lib/pgsql/.bash_profile /tmp
+[root@pg14-1 ~]# rm -rf /var/lib/pgsql/*
+```
+Инициализируем подключенный диск (disk-pgtbl1):
+```console
+[root@pg14-1 ~]# echo "`blkid | grep '/dev/sdb1' | awk '{print $2}'` /var/lib/pgsql ext4 defaults 0 2" >> /etc/fstab 
+[root@pg14-1 ~]# mount -av
+```
+Возвращаем файл профиля пользователя postgres:
+```console
+[root@pg14-1 ~]# mv /tmp/.bash_profile /var/lib/pgsql/
+```
+Проверяем переменную PGDATA в окружении пользователя postgres и состояние каталога $PGDATA:
+```console
+-bash-4.2$ env | grep PGDATA
+PGDATA=/var/lib/pgsql/14/data
+
+-bash-4.2$ ls -l $PGDATA
+total 136
+drwx------. 6 postgres postgres  4096 Oct 13 05:36 base
+-rw-------. 1 postgres postgres    30 Oct 13 10:26 current_logfiles
+drwx------. 2 postgres postgres  4096 Oct 13 10:27 global
+drwx------. 2 postgres postgres  4096 Oct 13 05:33 log
+drwx------. 2 postgres postgres  4096 Oct 13 05:33 pg_commit_ts
+drwx------. 2 postgres postgres  4096 Oct 13 05:33 pg_dynshmem
+-rw-------. 1 postgres postgres  4577 Oct 13 05:33 pg_hba.conf
+-rw-------. 1 postgres postgres  1636 Oct 13 05:33 pg_ident.conf
+drwx------. 4 postgres postgres  4096 Oct 13 10:31 pg_logical
+drwx------. 4 postgres postgres  4096 Oct 13 05:33 pg_multixact
+drwx------. 2 postgres postgres  4096 Oct 13 05:33 pg_notify
+drwx------. 2 postgres postgres  4096 Oct 13 05:33 pg_replslot
+drwx------. 2 postgres postgres  4096 Oct 13 05:33 pg_serial
+drwx------. 2 postgres postgres  4096 Oct 13 05:33 pg_snapshots
+drwx------. 2 postgres postgres  4096 Oct 13 10:26 pg_stat
+drwx------. 2 postgres postgres  4096 Oct 13 10:49 pg_stat_tmp
+drwx------. 2 postgres postgres  4096 Oct 13 05:33 pg_subtrans
+drwx------. 2 postgres postgres  4096 Oct 13 05:33 pg_tblspc
+drwx------. 2 postgres postgres  4096 Oct 13 05:33 pg_twophase
+-rw-------. 1 postgres postgres     3 Oct 13 05:33 PG_VERSION
+drwx------. 3 postgres postgres  4096 Oct 13 05:33 pg_wal
+drwx------. 2 postgres postgres  4096 Oct 13 05:33 pg_xact
+-rw-------. 1 postgres postgres    88 Oct 13 05:33 postgresql.auto.conf
+-rw-------. 1 postgres postgres 28750 Oct 13 05:33 postgresql.conf
+-rw-------. 1 postgres postgres    27 Oct 13 10:26 postmaster.opts
+-rw-------. 1 postgres postgres   103 Oct 13 10:26 postmaster.pid
+```
+Запускаем кластер и проверям ранее созданную таблицу в базе otus:
+```console
+-bash-4.2$ /usr/pgsql-14/bin/pg_ctl start
+
+-bash-4.2$ psql 
+psql (14.0)
+Type "help" for help.
+
+postgres=# \l
+                                  List of databases
+   Name    |  Owner   | Encoding |   Collate   |    Ctype    |   Access privileges   
+-----------+----------+----------+-------------+-------------+-----------------------
+ otus      | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | 
+ postgres  | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | 
+ template0 | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/postgres          +
+           |          |          |             |             | postgres=CTc/postgres
+ template1 | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/postgres          +
+           |          |          |             |             | postgres=CTc/postgres
+(4 rows)
+
+postgres=# \c otus 
+You are now connected to database "otus" as user "postgres".
+otus=# select * from test ;
+ c1 
+----
+ 1
+(1 row)
+```
