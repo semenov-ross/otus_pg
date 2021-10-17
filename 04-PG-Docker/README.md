@@ -24,7 +24,7 @@ systemctl start docker.service
 ```console
 [root@otus-pg-docker ~]# mkdir /var/lib/postgres
 ```
-Разворачиваем контейнер с PostgreSQL 14 смонтировав в него /var/lib/postgres:
+Разворачиваем контейнер с PostgreSQL 14, смонтировав в него /var/lib/postgres:
 ```console
 [root@otus-pg-docker ~]# docker network create pg-net
 10ce3d6ea023c995da884b437f48bb657bf6d70f5a0c18826c0925e5c3179fc7
