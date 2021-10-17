@@ -73,7 +73,7 @@ my-project=PROJECT_ID
 ```
 После этого проверяем соединение:
 ```console
-[ross@otuspg ~]$ psql otus -U postgres -h 34.121.182.131 -W
+[ross@otuspg ~]$ psql otus -U postgres -h EXTERNAL_IP -W
 Password: 
 psql (14.0)
 Type "help" for help.
