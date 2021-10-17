@@ -2,7 +2,7 @@
 
 ### Установка и настройка PostgteSQL в контейнере Docker
 
-Создаём в в GCE инстанс:
+Создаём в GCE инстанс:
 
 ```console
 gcloud compute instances create otus-pg-docker ...
