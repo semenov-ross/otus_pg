@@ -2,7 +2,7 @@
 
 ### Работа с базами данных, пользователями и правами
 
-Создаём новый кластер PostgresSQL 14 и подключаемся под пользователем postgres
+Создаём новый кластер PostgresSQL 14 и подключаемся под пользователем postgres:
 ```console
 [ross@otuspg ~]$ gcloud compute instances create pg14 ...
 [ross@otuspg ~]$ gcloud compute ssh pg14
@@ -21,7 +21,7 @@ Type "help" for help.
 postgres=#
 ```
 Cоздаём новую базу данных testdb, подключаемся к ней под пользователем postgres, создаём новую схему testnm, 
-создаём новую таблицу t1 с одной колонкой c1 типа integer, вставляем строку со значением c1=1
+создаём новую таблицу t1 с одной колонкой c1 типа integer, вставляем строку со значением c1=1:
 ```console
 postgres=# CREATE DATABASE testdb;
 CREATE DATABASE
@@ -33,4 +33,16 @@ testdb=# CREATE TABLE t1 (c1 int);
 CREATE TABLE
 testdb=# INSERT INTO t1 values (1);
 INSERT 0 1
+```
+Cоздаём новую роль readonly, даём право на подключение к базе данных testdb,
+даём право на использование схемы testnm, даём право на select для всех таблиц схемы testnm:
+```console
+testdb=# CREATE ROLE readonly;
+CREATE ROLE
+testdb=# GRANT CONNECT ON DATABASE testdb TO readonly;
+GRANT
+testdb=# GRANT USAGE ON SCHEMA testnm TO readonly;;
+GRANT
+testdb=# GRANT SELECT ON ALL TABLES IN SCHEMA testnm TO readonly;
+GRANT
 ```
