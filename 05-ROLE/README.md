@@ -20,3 +20,17 @@ Type "help" for help.
 
 postgres=#
 ```
+Cоздаём новую базу данных testdb, подключаемся к ней под пользователем postgres, создаём новую схему testnm, 
+создаём новую таблицу t1 с одной колонкой c1 типа integer, вставляем строку со значением c1=1
+```console
+postgres=# CREATE DATABASE testdb;
+CREATE DATABASE
+postgres=# \c testdb 
+You are now connected to database "testdb" as user "postgres".
+testdb=# CREATE SCHEMA testnm;
+CREATE SCHEMA
+testdb=# CREATE TABLE t1 (c1 int);
+CREATE TABLE
+testdb=# INSERT INTO t1 values (1);
+INSERT 0 1
+```
