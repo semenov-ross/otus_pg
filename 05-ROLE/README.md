@@ -153,7 +153,7 @@ You are now connected to database "testdb" as user "postgres".
 testdb=# REVOKE ALL ON SCHEMA public FROM PUBLIC;
 REVOKE
 ```
-Теперь попробуйте выполнить команду create table t3(c1 integer); insert into t2 values (2):
+Теперь выполним команду create table t3(c1 integer); insert into t2 values (2):
 ```console
 testdb=# \c - testread 
 You are now connected to database "testdb" as user "testread".
