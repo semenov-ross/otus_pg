@@ -45,7 +45,7 @@ GRANT
 testdb=# GRANT SELECT ON ALL TABLES IN SCHEMA testnm TO readonly;
 GRANT
 ```
-Создаём пользователя testread с паролем test123, даём роль readonly пользователю testread
+Создаём пользователя testread с паролем test123, назначаем роль readonly пользователю testread
 подключаемся под пользователем testread к базе данных testdb
 ```console
 testdb=# CREATE USER testread WITH PASSWORD 'test123';
