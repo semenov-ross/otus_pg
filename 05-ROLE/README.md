@@ -86,3 +86,14 @@ testdb=# \dt
  public | t1   | table | postgres
 (1 row)
 ```
+Подключаемся к БД testdb под пользователем postgres, удаляем таблицу t1, создаём ее заново с указанием имени схемы testnm, вставляем строку со значением c1=1:
+```console
+postgres=# \c testdb 
+You are now connected to database "testdb" as user "postgres".
+testdb=# DROP TABLE t1;
+DROP TABLE
+testdb=# CREATE TABLE testnm.t1 (c1 int);
+CREATE TABLE
+testdb=# INSERT INTO testnm.t1 values (1);
+INSERT 0 1
+```
