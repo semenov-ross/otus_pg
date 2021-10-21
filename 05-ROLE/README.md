@@ -97,3 +97,33 @@ CREATE TABLE
 testdb=# INSERT INTO testnm.t1 values (1);
 INSERT 0 1
 ```
+Подключаемся к БД testdb пользователем testread, делаем select * from testnm.t1:
+```console
+testdb=# \c - testread 
+You are now connected to database "testdb" as user "testread".
+testdb=> SELECT * FROM testnm.t1;
+ERROR:  permission denied for table t1
+```
+Ошибка связана с тем, что права на SELECT ON ALL TABLES IN SCHEMA testnm выдавались до токого как создавалась таблица.
+Выдаёём права повторно:
+```console
+testdb=> \c - postgres 
+You are now connected to database "testdb" as user "postgres".
+testdb=# GRANT SELECT ON ALL TABLES IN SCHEMA testnm TO readonly;
+GRANT
+testdb=# \c - testread 
+You are now connected to database "testdb" as user "testread".
+testdb=> SELECT * FROM testnm.t1;
+ c1 
+----
+  1
+(1 row)
+```
+Чтобы подобные ошибки не возникали в дальнейшем нужно определить права доступа по умолчанию:
+```console
+testdb=> \c - postgres 
+You are now connected to database "testdb" as user "postgres".
+testdb=# ALTER DEFAULT PRIVILEGES in SCHEMA testnm GRANT SELECT on TABLES TO readonly;
+ALTER DEFAULT PRIVILEGES
+```
+
