@@ -105,7 +105,7 @@ testdb=> SELECT * FROM testnm.t1;
 ERROR:  permission denied for table t1
 ```
 Ошибка связана с тем, что права на SELECT ON ALL TABLES IN SCHEMA testnm выдавались до токого как создавалась таблица.
-Выдаёём права повторно:
+Выдаём права повторно:
 ```console
 testdb=> \c - postgres 
 You are now connected to database "testdb" as user "postgres".
@@ -123,7 +123,7 @@ testdb=> SELECT * FROM testnm.t1;
 ```console
 testdb=> \c - postgres 
 You are now connected to database "testdb" as user "postgres".
-testdb=# ALTER DEFAULT PRIVILEGES in SCHEMA testnm GRANT SELECT on TABLES TO readonly;
+testdb=# ALTER DEFAULT PRIVILEGES IN SCHEMA testnm GRANT SELECT ON TABLES TO readonly;
 ALTER DEFAULT PRIVILEGES
 ```
 Пробуем выполнить команду create table t2(c1 integer); insert into t2 values (2):
