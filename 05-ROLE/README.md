@@ -126,4 +126,43 @@ You are now connected to database "testdb" as user "postgres".
 testdb=# ALTER DEFAULT PRIVILEGES in SCHEMA testnm GRANT SELECT on TABLES TO readonly;
 ALTER DEFAULT PRIVILEGES
 ```
-
+Пробуем выполнить команду create table t2(c1 integer); insert into t2 values (2):
+```console
+testdb=> create table t2(c1 integer); insert into t2 values (2);
+CREATE TABLE
+INSERT 0 1
+testdb=> \dt
+        List of relations
+ Schema | Name | Type  |  Owner   
+--------+------+-------+----------
+ public | t2   | table | testread
+(1 row)
+```
+Таблица создалась в схеме public, в которой по умолчанию всем пользователям даются права create и usage.
+```console
+testdb=> SHOW search_path;
+   search_path
+-----------------
+ "$user", public
+(1 row)
+```
+Чтобы убрать возможность пользователям создавать объекты в схеме public можно сделать так:
+```console
+testdb=> \c - postgres 
+You are now connected to database "testdb" as user "postgres".
+testdb=# REVOKE ALL ON SCHEMA public FROM PUBLIC;
+REVOKE
+```
+Теперь попробуйте выполнить команду create table t3(c1 integer); insert into t2 values (2):
+```console
+testdb=# \c - testread 
+You are now connected to database "testdb" as user "testread".
+testdb=> create table t3(c1 integer); insert into t2 values (2);
+ERROR:  no schema has been selected to create in
+LINE 1: create table t3(c1 integer);
+                     ^
+ERROR:  relation "t2" does not exist
+LINE 1: insert into t2 values (2);
+                    ^
+```
+Создание в схеме public запрещено и без указания схемы таблицу создать не получилось,а таблицы t2 не существует.
