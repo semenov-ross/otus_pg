@@ -31,4 +31,4 @@ max_wal_size = 16GB
 
 [root@pg14 ~]# systemctl restart postgresql-14.service
 ```
-![network](https://github.com/semenov-ross/otus_pg/blob/master/06-AUTOVACUUM/pgbench.png)
+![network](https://github.com/semenov-ross/otus_pg/blob/master/06-AUTOVACUUM/pgbench_n.png)
