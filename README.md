@@ -11,3 +11,6 @@
 
 ## [Логический уровень PostgreSQL](05-ROLE)
 Логический уровень psql и системный каталог;работа с данными;
+
+## [MVCC, vacuum и autovacuum](06-AUTOVACUUM)
+MVCC, vacuum и autovacuum
