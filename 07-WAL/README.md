@@ -36,6 +36,7 @@ postgres=# SELECT pg_current_wal_lsn();
 (1 row)
 
 -bash-4.2$ /usr/pgsql-14/bin/pgbench -i postgres
+pgbench (14.0)
 ...
 done in 0.44 s (drop tables 0.00 s, create tables 0.01 s, client-side generate 0.25 s, vacuum 0.09 s, primary keys 0.08 s).
 
@@ -71,7 +72,7 @@ postgres=# select pg_size_pretty(('0/1F65A500'::pg_lsn - '0/1748EE8'::pg_lsn)/20
  24 MB
 (1 row)
 ```
-Проверяем все ли контрольные точки выполнялись точно по расписанию:
+Проверяем, все ли контрольные точки выполнялись точно по расписанию:
 ```console
 postgres=# select * from pg_stat_bgwriter\gx
 -[ RECORD 1 ]---------+------------------------------
@@ -89,3 +90,72 @@ stats_reset           | 2021-10-31 13:18:40.333897+00
 ```
 Все контрольные точки выполнились по расписанию, так как в статистике checkpoints_timed = 31, а checkpoints_req = 0 ввиду того, что max_wal_size='1GB'
 больше объёма сгенерированного на одну контрольную точку(24 MB)
+
+Запускаем утилиту pgbench в асинхронном режиме:
+
+```console
+postgres=# ALTER SYSTEM SET synchronous_commit = off;
+ALTER SYSTEM
+postgres=# SELECT pg_reload_conf();
+ pg_reload_conf 
+----------------
+ t
+(1 row)
+-bash-4.2$ /usr/pgsql-14/bin/pgbench -c8 -P 10 -T 600 -U postgres postgres
+pgbench (14.0)
+...
+transaction type: <builtin: TPC-B (sort of)>
+scaling factor: 1
+query mode: simple
+number of clients: 8
+number of threads: 1
+duration: 600 s
+number of transactions actually processed: 762380
+latency average = 6.275 ms
+latency stddev = 17.833 ms
+initial connection time = 27.260 ms
+tps = 1270.477621 (without initial connection time)
+```
+В асинхронном режиме количество tps больше чем вдвое за счет отсутствия ожидания локального сброса WAL на диск,
+но может образоваться окно от момента, когда клиент узнаёт об успешном завершении, до момента, когда транзакция действительно гарантированно защищена от сбоя.
+
+Создаём новый кластер с включенной контрольной суммой страниц, создаём таблицу, вставляем несколько значений и выключаем кластер:
+```console
+[root@pg14wal ~]# systemctl stop postgresql-14.service
+[root@pg14wal ~]# rm -rf /var/lib/pgsql/14/data/
+[root@pg14wal ~]# su - postgres
+-bash-4.2$ /usr/pgsql-14/bin/initdb -D /var/lib/pgsql/14/data --data-checksums
+[root@pg14wal ~]# systemctl start postgresql-14.service
+postgres=# create table test(col1 int,col2 int);
+CREATE TABLE
+postgres=# INSERT INTO test SELECT i, i+2 FROM generate_series (1,100) s(i);
+INSERT 0 100
+postgres=# select pg_relation_filepath('test');
+ pg_relation_filepath 
+----------------------
+ base/14486/16384
+(1 row)
+```
+Изменяем пару байт в таблице test, включаем кластер и делаем выборку из таблицы.
+```console
+[root@pg14wal ~]# systemctl stop postgresql-14.service
+[root@pg14wal 14486]# vi /var/lib/pgsql/14/data/base/14486/16384
+[root@pg14wal 14486]# systemctl start postgresql-14.service
+postgres=# select * from test;
+WARNING:  page verification failed, calculated checksum 25198 but expected 18599
+ERROR:  invalid page in block 0 of relation base/14486/16384
+```
+Получили ошибку проверки контрольной суммы страницы. Чтобы игнорировать ошибку включаем параметр ignore_checksum_failure:
+```console
+postgres=# SET ignore_checksum_failure = on;
+SET
+postgres=# select * from test;
+WARNING:  page verification failed, calculated checksum 25198 but expected 18599
+ col1 |  col2   
+------+---------
+    1 | 6381921
+    2 |       4
+    3 |       5
+...
+```
+Неповрежденные данные прочитать удалось, так как цел заголовок блока.
