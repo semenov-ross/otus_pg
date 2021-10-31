@@ -135,10 +135,10 @@ postgres=# select pg_relation_filepath('test');
 ----------------------
  base/14486/16384
 (1 row)
+[root@pg14wal ~]# systemctl stop postgresql-14.service
 ```
 Изменяем пару байт в таблице test, включаем кластер и делаем выборку из таблицы.
 ```console
-[root@pg14wal ~]# systemctl stop postgresql-14.service
 [root@pg14wal 14486]# vi /var/lib/pgsql/14/data/base/14486/16384
 [root@pg14wal 14486]# systemctl start postgresql-14.service
 postgres=# select * from test;
