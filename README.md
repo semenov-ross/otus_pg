@@ -15,5 +15,5 @@
 ## [MVCC, vacuum и autovacuum](06-AUTOVACUUM)
 MVCC, vacuum и autovacuum
 
-## Журналы
+## [Журналы](07-WAL)
 настроить журналирование; корректно настроить схему контрольных точек.
