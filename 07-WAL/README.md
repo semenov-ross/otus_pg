@@ -27,7 +27,7 @@ postgres=# SHOW checkpoint_timeout ;
  30s
 (1 row)
 ```
-Фиксируем текущий lsn и подаём нагрузку c помощью утилиты pgbench в течении 10 минут:
+Фиксируем текущий lsn и подаём нагрузку c помощью утилиты pgbench в течение 10 минут:
 ```console
 postgres=# SELECT pg_current_wal_lsn();
  pg_current_wal_lsn 
@@ -87,5 +87,5 @@ buffers_backend_fsync | 0
 buffers_alloc         | 4760
 stats_reset           | 2021-10-31 13:18:40.333897+00
 ```
-Все контрольные точки выполнились по расписанию, так как в статистике checkpoints_timed = 31, а checkpoints_req = 0 в виду того, что max_wal_size='1GB'
+Все контрольные точки выполнились по расписанию, так как в статистике checkpoints_timed = 31, а checkpoints_req = 0 ввиду того, что max_wal_size='1GB'
 больше объёма сгенерированного на одну контрольную точку(24 MB)
