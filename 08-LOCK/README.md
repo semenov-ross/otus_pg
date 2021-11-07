@@ -136,7 +136,7 @@ pid  | transactionid | virtualxid |   locktype    | relation |       mode       
  2604 |               |            | tuple         | lock_tbl | ExclusiveLock    | f
 (12 rows)
 ```
-Каждая из сессий установила исключительную блокировку ExclusiveLock на виртуальный идентификатор транзакции(virtualxid) и на номера своих транзакций(transactionid). 
-Каждая из сессий установила блокировку RowExclusiveLock на таблицу lock_tbl. 
-Вторая сессия ожидает от первой блокировку transactionid в режиме ShareLock и удерживает блокировку tuple в режиме ExclusiveLock. 
-Третья сессия ожидает блокировку tuple в режиме ExclusiveLock. 
+Каждая из сессий установила исключительную блокировку ExclusiveLock на виртуальный идентификатор транзакции(virtualxid) и на номера своих транзакций(transactionid).  
+Каждая из сессий установила блокировку RowExclusiveLock на таблицу lock_tbl.  
+Вторая сессия ожидает от первой блокировку transactionid в режиме ShareLock и удерживает блокировку tuple в режиме ExclusiveLock.  
+Третья сессия ожидает блокировку tuple в режиме ExclusiveLock.  
