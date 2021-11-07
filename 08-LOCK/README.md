@@ -202,3 +202,36 @@ CONTEXT:  while updating tuple (0,2) in relation "lock_tbl"
 2021-11-07 14:18:06.688 UTC [16762] STATEMENT:  UPDATE lock_tbl SET i=9 WHERE i=6;
 ```
 Третья сессия 16765 была заблокирована первой 16758, которая был заблокирована второй 16762, которая в свою очередь был заблокирована третьей 16765.
+
+Две транзакции, выполняющие единственную команду UPDATE одной и той же таблицы (без where), могут заблокировать друг друга, если одна команда будет обновлять строки в одном порядке, а другая - в другом.  
+Воспроизвести такую ситуацию можно с помощью курсоров, так как можно управлять порядком чтения:
+```console
+[sess1] otus> BEGIN;
+BEGIN
+[sess1] otus> DECLARE c1 CURSOR FOR SELECT * FROM lock_tbl ORDER BY i FOR UPDATE;
+DECLARE CURSOR
+
+[sess2] otus> BEGIN;
+BEGIN
+[sess2] otus> DECLARE c2 CURSOR FOR SELECT * FROM lock_tbl ORDER BY i DESC FOR UPDATE;
+DECLARE CURSOR
+
+[sess1] otus> FETCH c1;
+ i 
+---
+ 0
+(1 row)
+[sess2] otus> FETCH c2;
+ i  
+----
+ 12
+(1 row)
+...
+[sess1] otus> FETCH c1;
+ERROR:  deadlock detected
+DETAIL:  Process 17005 waits for ShareLock on transaction 775; blocked by process 17014.
+Process 17014 waits for ShareLock on transaction 774; blocked by process 17005.
+HINT:  See server log for query details.
+CONTEXT:  while locking tuple (0,9) in relation "lock_tbl"
+
+```
