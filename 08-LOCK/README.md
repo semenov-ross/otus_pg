@@ -72,3 +72,71 @@ otus=*# UPDATE lock_tbl SET i=3 WHERE i=2;
 2021-11-07 11:36:57.900 UTC [1962] CONTEXT:  while updating tuple (0,2) in relation "lock_tbl"
 2021-11-07 11:36:57.900 UTC [1962] STATEMENT:  UPDATE lock_tbl SET i=3 WHERE i=2;
 ```
+
+Смоделируем ситуацию обновления одной и той же строки тремя командами UPDATE в разных сеансах, запоминая код серверного процесса и идентификатор текущей транзакции:
+```console
+otus=# \set PROMPT1 '[sess1] %/> '
+[sess1] otus> BEGIN;
+BEGIN
+[sess1] otus> SELECT pg_backend_pid(), txid_current();
+ pg_backend_pid | txid_current 
+----------------+--------------
+           2595 |          766
+(1 row)
+[sess1] otus> UPDATE lock_tbl SET i=4 WHERE i=1;
+UPDATE 1
+
+otus=# \set PROMPT1 '[sess2] %/> '
+[sess2] otus> BEGIN;
+BEGIN
+[sess2] otus> SELECT pg_backend_pid(), txid_current();
+ pg_backend_pid | txid_current 
+----------------+--------------
+           2600 |          767
+(1 row)
+[sess2] otus> UPDATE lock_tbl SET i=5 WHERE i=1;
+
+otus=# \set PROMPT1 '[sess3] %/> '
+[sess3] otus> BEGIN;
+BEGIN
+[sess3] otus> SELECT pg_backend_pid(), txid_current();
+ pg_backend_pid | txid_current 
+----------------+--------------
+           2604 |          768
+(1 row)
+[sess3] otus> UPDATE lock_tbl SET i=6 WHERE i=1;
+```
+Вторая и третья сессии ожидают окончания транзакции в первой сесси, так как она блокирует изменяемую строку.
+В журнале видим:
+```console
+2021-11-07 13:02:23.675 UTC [2600] LOG:  process 2600 still waiting for ShareLock on transaction 766 after 200.170 ms
+2021-11-07 13:02:23.675 UTC [2600] DETAIL:  Process holding the lock: 2595. Wait queue: 2600.
+2021-11-07 13:02:23.675 UTC [2600] CONTEXT:  while updating tuple (0,1) in relation "lock_tbl"
+2021-11-07 13:02:23.675 UTC [2600] STATEMENT:  UPDATE lock_tbl SET i=5 WHERE i=1;
+2021-11-07 13:02:34.993 UTC [2604] LOG:  process 2604 still waiting for ExclusiveLock on tuple (0,1) of relation 16388 of database 16384 after 200.184 ms
+2021-11-07 13:02:34.993 UTC [2604] DETAIL:  Process holding the lock: 2600. Wait queue: 2604.
+2021-11-07 13:02:34.993 UTC [2604] STATEMENT:  UPDATE lock_tbl SET i=6 WHERE i=1;
+```
+В представлении pg_locks смотрим информацию о блокировках:
+```console
+postgres=# SELECT pid,transactionid,virtualxid,locktype,relation::regclass,mode, granted FROM pg_locks WHERE pid IN (2595,2600,2604) ORDER BY 1; 
+pid  | transactionid | virtualxid |   locktype    | relation |       mode       | granted 
+------+---------------+------------+---------------+----------+------------------+---------
+ 2595 |           766 |            | transactionid |          | ExclusiveLock    | t
+ 2595 |               |            | relation      | lock_tbl | RowExclusiveLock | t
+ 2595 |               | 5/37       | virtualxid    |          | ExclusiveLock    | t
+ 2600 |               |            | relation      | lock_tbl | RowExclusiveLock | t
+ 2600 |               | 6/15       | virtualxid    |          | ExclusiveLock    | t
+ 2600 |           767 |            | transactionid |          | ExclusiveLock    | t
+ 2600 |               |            | tuple         | lock_tbl | ExclusiveLock    | t
+ 2600 |           766 |            | transactionid |          | ShareLock        | f
+ 2604 |           768 |            | transactionid |          | ExclusiveLock    | t
+ 2604 |               | 7/105      | virtualxid    |          | ExclusiveLock    | t
+ 2604 |               |            | relation      | lock_tbl | RowExclusiveLock | t
+ 2604 |               |            | tuple         | lock_tbl | ExclusiveLock    | f
+(12 rows)
+```
+Каждая из сессий установила исключительную блокировку ExclusiveLock на виртуальный идентификатор транзакции(virtualxid) и на номера своих транзакций(transactionid). 
+Каждая из сессий установила блокировку RowExclusiveLock на таблицу lock_tbl. 
+Вторая сессия ожидает от первой блокировку transactionid в режиме ShareLock и удерживает блокировку tuple в режиме ExclusiveLock. 
+Третья сессия ожидает блокировку tuple в режиме ExclusiveLock. 
