@@ -140,3 +140,65 @@ pid  | transactionid | virtualxid |   locktype    | relation |       mode       
 Каждая из сессий установила блокировку RowExclusiveLock на таблицу lock_tbl.  
 Вторая сессия ожидает от первой блокировку transactionid в режиме ShareLock и удерживает блокировку tuple в режиме ExclusiveLock.  
 Третья сессия ожидает блокировку tuple в режиме ExclusiveLock.  
+
+Воспроизведём взаимоблокировку трех транзакций:
+```console
+[sess1] otus> BEGIN ;
+BEGIN
+[sess1] otus> SELECT pg_backend_pid(), txid_current();
+ pg_backend_pid | txid_current 
+----------------+--------------
+          16758 |          769
+(1 row)
+
+[sess1] otus> UPDATE lock_tbl SET i = 5 WHERE i=2;
+UPDATE 1
+[sess1] otus> UPDATE lock_tbl SET i=6 WHERE i=4;
+
+[sess2] otus> BEGIN;
+BEGIN
+[sess2] otus> SELECT pg_backend_pid(), txid_current();
+ pg_backend_pid | txid_current 
+----------------+--------------
+          16762 |          770
+(1 row)
+
+[sess2] otus> UPDATE lock_tbl SET i=6 WHERE i=4;
+UPDATE 1
+[sess2] otus> UPDATE lock_tbl SET i=9 WHERE i=6;
+
+[sess3] otus> BEGIN;
+BEGIN
+[sess3] otus> SELECT pg_backend_pid(), txid_current();
+ pg_backend_pid | txid_current 
+----------------+--------------
+          16765 |          772
+(1 row)
+
+[sess3] otus> UPDATE lock_tbl SET i=9 WHERE i=6;
+UPDATE 1
+[sess3] otus> UPDATE lock_tbl SET i = 5 WHERE i=2;
+ERROR:  deadlock detected
+DETAIL:  Process 16765 waits for ShareLock on transaction 769; blocked by process 16758.
+Process 16758 waits for ShareLock on transaction 770; blocked by process 16762.
+Process 16762 waits for ShareLock on transaction 772; blocked by process 16765.
+HINT:  See server log for query details.
+CONTEXT:  while updating tuple (0,2) in relation "lock_tbl"
+```
+В журнале видим:
+```console
+2021-11-07 14:18:06.688 UTC [16765] ERROR:  deadlock detected
+2021-11-07 14:18:06.688 UTC [16765] DETAIL:  Process 16765 waits for ShareLock on transaction 769; blocked by process 16758.
+        Process 16758 waits for ShareLock on transaction 770; blocked by process 16762.
+        Process 16762 waits for ShareLock on transaction 772; blocked by process 16765.
+        Process 16765: UPDATE lock_tbl SET i = 5 WHERE i=2;
+        Process 16758: UPDATE lock_tbl SET i=6 WHERE i=4;
+        Process 16762: UPDATE lock_tbl SET i=9 WHERE i=6;
+2021-11-07 14:18:06.688 UTC [16765] HINT:  See server log for query details.
+2021-11-07 14:18:06.688 UTC [16765] CONTEXT:  while updating tuple (0,2) in relation "lock_tbl"
+2021-11-07 14:18:06.688 UTC [16765] STATEMENT:  UPDATE lock_tbl SET i = 5 WHERE i=2;
+2021-11-07 14:18:06.688 UTC [16762] LOG:  process 16762 acquired ShareLock on transaction 772 after 9909.610 ms
+2021-11-07 14:18:06.688 UTC [16762] CONTEXT:  while updating tuple (0,5) in relation "lock_tbl"
+2021-11-07 14:18:06.688 UTC [16762] STATEMENT:  UPDATE lock_tbl SET i=9 WHERE i=6;
+```
+Третья сессия 16765 была заблокирована первой 16758, которая был заблокирована второй 16762, которая в свою очередь был заблокирована третьей 16765.
