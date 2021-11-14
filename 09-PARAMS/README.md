@@ -1,7 +1,7 @@
 # Настройка PostgreSQL
 ### поработать с параметрами конфигурации PostgreSQL;объяснить выбор оптимального значения для параметров.
 
-Создаём новый кластер PostgresSQL 14, используя в GCE инстансе standard disk, для более яркой демонстрации влияние конфигурационных параметров сервера PostgresSQL на производительность:
+Создаём новый кластер PostgresSQL 14, используя в GCE инстансе standard disk, для более наглядной демонстрации влияние конфигурационных параметров сервера PostgresSQL на производительность:
 ```console
 [ross@otuspg ~]$ gcloud compute instances create pg14bench ... diskTypes/pd-standard ...
 [ross@otuspg ~]$ gcloud compute ssh pg14bench
