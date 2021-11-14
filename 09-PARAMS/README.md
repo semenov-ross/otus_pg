@@ -49,7 +49,7 @@ sysbench-# \dt+
  public | sbtest9  | table | ubench | permanent   | heap          | 211 MB |
 (10 rows)
 ```
-Запустим тест oltp_read_write на 10 минут, использую 10 потоков:
+Запустим тест oltp_read_write на 10 минут, используя 10 потоков:
 ```console
 -bash-4.2$ sysbench --db-driver=pgsql --pgsql-db=sysbench --pgsql-user=ubench --pgsql-password=password --report-interval=30 --tables=10 --table_size=1000000 --threads=10 --time=600 oltp_read_write run
 sysbench 1.0.20 (using bundled LuaJIT 2.1.0-beta2)
@@ -95,11 +95,11 @@ Threads fairness:
     events (avg/stddev):           5600.6000/20.03
     execution time (avg/stddev):   600.0723/0.01
 ```
-Для реализации задачи, получения максимальной производительности, не обращая внимние на надёжность, отключаем параметры, отвечающие за синхронизацию данных на файловой системе(synchronous_commit,fsync,full_page_writes).  
+Для реализации задачи получения максимальной производительности, не обращая внимние на надёжность, отключаем параметры, отвечающие за синхронизацию данных на файловой системе(synchronous_commit,fsync,full_page_writes).  
 Увеличиваем значение параметров max_wal_size и checkpoint_timeout для исключения влияние служебных процессов на тестирование.  
 Увеличиваем значение shared_buffers до 40% от ОЗУ и work_mem для использования макисимально возможного объёма ОЗУ.  
 Ограничиваем количество подключений до минимального. Так как max_connections включает в себя superuser_reserved_connections(по умолчанию 3), устанавливаем max_connections=13.  
-Так же ограничим количество служебных процессов(max_worker_processes, max_parallel_workers, max_parallel_maintenance_workers, max_parallel_workers_per_gather).  
+Также ограничим количество служебных процессов(max_worker_processes, max_parallel_workers, max_parallel_maintenance_workers, max_parallel_workers_per_gather).  
 Допишим новые значения параметров в конце файла /var/lib/pgsql/14/data/postgresql.conf  
 После перечитывания конфигурации видим, что есть параметры, требующие перезапуска сервера:
 ```console
@@ -202,4 +202,4 @@ Threads fairness:
 ```
 По результатам теста количество transactions увеличилось с 93.32 per sec до 318.28 per sec, количество queries с 1866.45 per sec до 6365.71 per sec. 
 Это говорит о том, что при уменьшении влияния медленной дисковой подсистемы на результаты теста, можно добиться ощутимого прироста производительности, 
-но данные параметры нельзя применять в продуктивной среде, в силу отсутствия надёжности данных.
+но данные параметры нельзя применять в продуктивной среде в силу отсутствия надёжности данных.
