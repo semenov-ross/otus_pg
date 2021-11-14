@@ -99,7 +99,7 @@ Threads fairness:
 Увеличиваем значение параметров max_wal_size и checkpoint_timeout для исключения влияние служебных процессов на тестирование.  
 Увеличиваем значение shared_buffers до 40% от ОЗУ и work_mem для использования макисимально возможного объёма ОЗУ.  
 Ограничиваем количество подключений до минимального. Так как max_connections включает в себя superuser_reserved_connections(по умолчанию 3), устанавливаем max_connections=13.  
-Так же ограничим количество служебных процессов(max_worker_processes, max_parallel_workers, max_parallel_maintenance_workers, max_parallel_workers_per_gather).
+Так же ограничим количество служебных процессов(max_worker_processes, max_parallel_workers, max_parallel_maintenance_workers, max_parallel_workers_per_gather).  
 Допишим новые значения параметров в конце файла /var/lib/pgsql/14/data/postgresql.conf  
 После перечитывания конфигурации видим, что есть параметры, требующие перезапуска сервера:
 ```console
