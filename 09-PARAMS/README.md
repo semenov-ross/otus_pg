@@ -96,7 +96,7 @@ Threads fairness:
     execution time (avg/stddev):   600.0723/0.01
 ```
 Для реализации задачи, получения максимальной производительности, не обращая внимние на надёжность, отключаем параметры, отвечающие за синхронизацию данных на файловой системе(synchronous_commit,fsync,full_page_writes).  
-С этой же целью увеличиваем значение параметров max_wal_size и checkpoint_timeout.  
+Увеличиваем значение параметров max_wal_size и checkpoint_timeout для исключения влияние служебных процессов на тестирование.  
 Увеличиваем значение shared_buffers до 40% от ОЗУ и work_mem для использования макисимально возможного объёма ОЗУ.  
 Ограничиваем количество подключений до минимального. Так как max_connections включает в себя superuser_reserved_connections(по умолчанию 3), устанавливаем max_connections=13.  
 Так же ограничим количество служебных процессов(max_worker_processes, max_parallel_workers, max_parallel_maintenance_workers, max_parallel_workers_per_gather).
