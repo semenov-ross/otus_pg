@@ -101,6 +101,23 @@ Threads fairness:
 Ограничиваем количество подключений до минимального. Так как max_connections включает в себя superuser_reserved_connections(по умолчанию 3), устанавливаем max_connections=13.  
 Также ограничим количество служебных процессов(max_worker_processes, max_parallel_workers, max_parallel_maintenance_workers, max_parallel_workers_per_gather).  
 Допишим новые значения параметров в конце файла /var/lib/pgsql/14/data/postgresql.conf  
+```console
+-bash-4.2$ tail -14 14/data/postgresql.conf 
+
+shared_buffers = 1500MB
+maintenance_work_mem = 200MB
+work_mem = 200MB
+max_connections = 13
+synchronous_commit = off
+fsync = off
+full_page_writes = off
+checkpoint_timeout = 24h
+max_wal_size = 10GB
+max_worker_processes = 2
+max_parallel_workers = 2
+max_parallel_maintenance_workers = 1
+max_parallel_workers_per_gather = 1
+```
 После перечитывания конфигурации видим, что есть параметры, требующие перезапуска сервера:
 ```console
 postgres=# select pg_reload_conf();
