@@ -23,3 +23,6 @@ MVCC, vacuum и autovacuum
 
 ## [Настройка PostgreSQL](09-PARAMS)
 Поработать с параметрами конфигурации PostgreSQL;
+
+## [Виды и устройство репликации в PostgreSQL](10-REPLICATION)
+настроить репликацию;
