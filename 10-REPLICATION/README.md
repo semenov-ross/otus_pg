@@ -58,6 +58,32 @@ CREATE TABLE
 [pg14-repl1] otus> INSERT INTO test2 SELECT i FROM generate_series (1,10) s(i);
 INSERT 0 10
 ```
+Создаем публикацию таблицы test и подписываемся на публикацию таблицы test2 с ВМ pg14-repl2, создав на ВМ pg14-repl2 в БД otus таблицы test2 для записи, test для запросов на чтение
+```console
+[pg14-repl2] postgres> ALTER SYSTEM SET wal_level = 'logical';
+ALTER SYSTEM
+[pg14-repl2] postgres> \q
+-bash-4.2$ exit
+logout
+[root@pg14-repl2 ~]# systemctl restart postgresql-14.service
+[root@pg14-repl2 ~]# su - postgres
+postgres=# \set PROMPT1 '[pg14-repl2] %/> '
+[pg14-repl2] postgres> 
+[pg14-repl2] postgres> CREATE DATABASE otus;
+CREATE DATABASE
+[pg14-repl2] otus> CREATE TABLE test (k1 serial primary key);
+CREATE TABLE
+[pg14-repl2] otus> CREATE TABLE test2 (k2 serial primary key);
+CREATE TABLE
+[pg14-repl2] otus> INSERT INTO test2 SELECT i FROM generate_series (1,10) s(i);
+INSERT 0 10
+
+[pg14-repl1] otus> CREATE PUBLICATION pubication_test FOR TABLE test;
+CREATE PUBLICATION
+[pg14-repl1] otus> CREATE SUBSCRIPTION subscription_test2 CONNECTION 'host=pg14-repl2 user=postgres password=postgres dbname=otus' PUBLICATION publication_test2 WITH (copy_data = true);
+NOTICE:  created replication slot "subscription_test2" on publisher
+CREATE SUBSCRIPTION
+```
 
 ```console
 ```
