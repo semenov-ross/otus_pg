@@ -58,7 +58,7 @@ CREATE TABLE
 [pg14-repl1] otus> INSERT INTO test2 SELECT i FROM generate_series (1,10) s(i);
 INSERT 0 10
 ```
-Создаем публикацию таблицы test и подписываемся на публикацию таблицы test2 с ВМ pg14-repl2, создав на ВМ pg14-repl2 в БД otus таблицы test2 для записи, test для запросов на чтение
+На ВМ pg14-repl1 создаем публикацию таблицы test и подписываемся на публикацию таблицы test2 с ВМ pg14-repl2, создав на ВМ pg14-repl2 в БД otus таблицы test2 для записи, test для запросов на чтение
 ```console
 [pg14-repl2] postgres> ALTER SYSTEM SET wal_level = 'logical';
 ALTER SYSTEM
@@ -78,6 +78,8 @@ CREATE TABLE
 [pg14-repl2] otus> INSERT INTO test2 SELECT i FROM generate_series (1,10) s(i);
 INSERT 0 10
 
+postgres=# \set PROMPT1 '[pg14-repl1] %/> '
+[pg14-repl1] postgres> \c otus
 [pg14-repl1] otus> CREATE PUBLICATION pubication_test FOR TABLE test;
 CREATE PUBLICATION
 [pg14-repl1] otus> CREATE SUBSCRIPTION subscription_test2 CONNECTION 'host=pg14-repl2 user=postgres password=postgres dbname=otus' PUBLICATION publication_test2 WITH (copy_data = true);
