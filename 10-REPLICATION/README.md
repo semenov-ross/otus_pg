@@ -85,6 +85,21 @@ CREATE PUBLICATION
 [pg14-repl1] otus> CREATE SUBSCRIPTION subscription_test2 CONNECTION 'host=pg14-repl2 user=postgres password=postgres dbname=otus' PUBLICATION publication_test2 WITH (copy_data = true);
 NOTICE:  created replication slot "subscription_test2" on publisher
 CREATE SUBSCRIPTION
+
+[pg14-repl1] otus> \dRp+
+                        Publication pubication_test
+  Owner   | All tables | Inserts | Updates | Deletes | Truncates | Via root 
+----------+------------+---------+---------+---------+-----------+----------
+ postgres | f          | t       | t       | t       | t         | f
+Tables:
+    "public.test"
+
+[pg14-repl1] otus> \dRs+
+                                                                         List of subscriptions
+        Name        |  Owner   | Enabled |     Publication     | Binary | Streaming | Synchronous commit |                          Conninfo                           
+--------------------+----------+---------+---------------------+--------+-----------+--------------------+-------------------------------------------------------------
+ subscription_test2 | postgres | t       | {publication_test2} | f      | f         | off                | host=pg14-repl2 user=postgres password=postgres dbname=otus
+(1 row)
 ```
 
 ```console
