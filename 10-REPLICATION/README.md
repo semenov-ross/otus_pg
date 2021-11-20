@@ -101,6 +101,27 @@ Tables:
  subscription_test2 | postgres | t       | {publication_test2} | f      | f         | off                | host=pg14-repl2 user=postgres password=postgres dbname=otus
 (1 row)
 ```
+На ВМ pg14-repl2 создаем публикацию таблицы test2 и подписываемся на публикацию таблицы test с ВМ pg14-repl1.
+```console
+[pg14-repl2] otus> CREATE PUBLICATION publication_test2 FOR TABLE test2;
+CREATE PUBLICATION
+[pg14-repl2] otus> \dRp+
+                       Publication publication_test2
+  Owner   | All tables | Inserts | Updates | Deletes | Truncates | Via root 
+----------+------------+---------+---------+---------+-----------+----------
+ postgres | f          | t       | t       | t       | t         | f
+Tables:
+    "public.test2"
+[pg14-repl2] otus> CREATE SUBSCRIPTION subscription_test CONNECTION 'host=pg14-repl1 user=postgres password=postgres dbname=otus' PUBLICATION publication_test WITH (copy_data = true);
+NOTICE:  created replication slot "subscription_test" on publisher
+CREATE SUBSCRIPTION
+[pg14-repl2] otus> \dRs+
+                                                                        List of subscriptions
+       Name        |  Owner   | Enabled |    Publication     | Binary | Streaming | Synchronous commit |                          Conninfo                           
+-------------------+----------+---------+--------------------+--------+-----------+--------------------+-------------------------------------------------------------
+ subscription_test | postgres | t       | {publication_test} | f      | f         | off                | host=pg14-repl1 user=postgres password=postgres dbname=otus
+(1 row)
+```
 
 ```console
 ```
