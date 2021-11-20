@@ -353,6 +353,58 @@ INSERT 0 10
 
 [pg14-repl2] otus> INSERT INTO test2 SELECT i FROM generate_series (11,20) s(i);
 INSERT 0 10
+```
+Проверяем на pg14-repl4:
+```console
+[pg14-repl4] postgres> \c otus 
+You are now connected to database "otus" as user "postgres".
+[pg14-repl4] otus> select * from test;
+ k1 
+----
+  1
+  2
+  3
+  4
+  5
+  6
+  7
+  8
+  9
+ 10
+ 11
+ 12
+ 13
+ 14
+ 15
+ 16
+ 17
+ 18
+ 19
+ 20
+(20 rows)
 
-
+[pg14-repl4] otus> select * from test2;
+ k2 
+----
+  1
+  2
+  3
+  4
+  5
+  6
+  7
+  8
+  9
+ 10
+ 11
+ 12
+ 13
+ 14
+ 15
+ 16
+ 17
+ 18
+ 19
+ 20
+(20 rows)
 ```
