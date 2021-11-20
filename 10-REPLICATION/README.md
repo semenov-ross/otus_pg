@@ -285,21 +285,21 @@ reply_time       | 2021-11-20 11:46:47.645259+00
           96 | host  | {replication} | {all}     | 10.128.0.0 | 255.255.255.0                           | scram-sha-256 |         |
 (8 rows)
 
--bash-4.2$ /usr/pgsql-14/bin/pg_basebackup -h pg14-repl3 -U postgres -D /var/lib/pgsql/14/data/ -W -v -R -P
+[root@pg14-repl4 ~]# /usr/pgsql-14/bin/pg_basebackup -h pg14-repl3 -U postgres -D /var/lib/pgsql/14/data/ -W -v -R -P
 Password: 
 pg_basebackup: initiating base backup, waiting for checkpoint to complete
 pg_basebackup: checkpoint completed
 pg_basebackup: write-ahead log start point: 0/2000028 on timeline 1
 pg_basebackup: starting background WAL receiver
-pg_basebackup: created temporary replication slot "pg_basebackup_1598"
-35884/35884 kB (100%), 1/1 tablespace
+pg_basebackup: created temporary replication slot "pg_basebackup_18459"
+35892/35892 kB (100%), 1/1 tablespace                                         
 pg_basebackup: write-ahead log end point: 0/2000100
 pg_basebackup: waiting for background process to finish streaming ...
 pg_basebackup: syncing data to disk ...
 pg_basebackup: renaming backup_manifest.tmp to backup_manifest
 pg_basebackup: base backup completed
 
-[root@pg14-repl4 14]# systemctl restart postgresql-14.service
+[root@pg14-repl4 14]# systemctl start postgresql-14.service
 
 [pg14-repl4] postgres> \l
                                   List of databases
@@ -319,22 +319,22 @@ You are now connected to database "otus" as user "postgres".
                                      List of relations
  Schema | Name  | Type  |  Owner   | Persistence | Access method |    Size    | Description 
 --------+-------+-------+----------+-------------+---------------+------------+-------------
- public | test  | table | postgres | permanent   | heap          | 0 bytes    | 
+ public | test  | table | postgres | permanent   | heap          | 8192 bytes | 
  public | test2 | table | postgres | permanent   | heap          | 8192 bytes | 
 (2 rows)
 ```
-Проверяем статус репликации на pg14-repl3 и делаем вставку строки на pg14-repl1:
+Проверяем статус репликации на pg14-repl3 и делаем вставку строк на pg14-repl1 и pg14-repl2 в публикуемые таблицы:
 ```console
-[pg14-repl3] otus> SELECT * FROM pg_stat_replication\gx
+[pg14-repl3] postgres> SELECT * FROM pg_stat_replication\gx
 -[ RECORD 1 ]----+------------------------------
-pid              | 17463
+pid              | 18539
 usesysid         | 10
 usename          | postgres
 application_name | walreceiver
 client_addr      | 10.128.0.23
 client_hostname  | 
-client_port      | 48908
-backend_start    | 2021-11-20 10:16:13.559909+00
+client_port      | 49106
+backend_start    | 2021-11-20 12:03:45.942517+00
 backend_xmin     | 
 state            | streaming
 sent_lsn         | 0/7000060
@@ -346,11 +346,12 @@ flush_lag        |
 replay_lag       | 
 sync_priority    | 0
 sync_state       | async
-reply_time       | 2021-11-20 10:18:13.784496+00
+reply_time       | 2021-11-20 12:06:36.251847+00
 
 [pg14-repl1] otus> INSERT INTO test SELECT i FROM generate_series (11,20) s(i);
 INSERT 0 10
-[pg14-repl1] otus> INSERT INTO test2 SELECT i FROM generate_series (11,20) s(i);
+
+[pg14-repl2] otus> INSERT INTO test2 SELECT i FROM generate_series (11,20) s(i);
 INSERT 0 10
 
 
