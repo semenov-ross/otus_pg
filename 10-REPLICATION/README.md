@@ -65,7 +65,8 @@ CREATE TABLE
  public | test  | table | postgres | permanent   | heap          | 8192 bytes | 
  public | test2 | table | postgres | permanent   | heap          | 0 bytes    |
 ```
-На ВМ pg14-repl1 создаем публикацию таблицы test и подписываемся на публикацию таблицы test2 с ВМ pg14-repl2, создав на ВМ pg14-repl2 в БД otus таблицы test2 для записи, test для запросов на чтение
+На ВМ pg14-repl1 создаем публикацию таблицы test и подписываемся на публикацию таблицы test2 с ВМ pg14-repl2, 
+создав на ВМ pg14-repl2 в БД otus таблицы test2 для записи, test для запросов на чтение и создав публикацию таблицы test2:
 ```console
 [pg14-repl2] postgres> ALTER SYSTEM SET wal_level = 'logical';
 ALTER SYSTEM
@@ -78,23 +79,39 @@ postgres=# \set PROMPT1 '[pg14-repl2] %/> '
 [pg14-repl2] postgres> 
 [pg14-repl2] postgres> CREATE DATABASE otus;
 CREATE DATABASE
+[pg14-repl2] postgres> \c otus
 [pg14-repl2] otus> CREATE TABLE test (k1 serial primary key);
 CREATE TABLE
 [pg14-repl2] otus> CREATE TABLE test2 (k2 serial primary key);
 CREATE TABLE
 [pg14-repl2] otus> INSERT INTO test2 SELECT i FROM generate_series (1,10) s(i);
 INSERT 0 10
-
-postgres=# \set PROMPT1 '[pg14-repl1] %/> '
-[pg14-repl1] postgres> \c otus
-[pg14-repl1] otus> CREATE PUBLICATION pubication_test FOR TABLE test;
+[pg14-repl2] otus> \dt+
+                                     List of relations
+ Schema | Name  | Type  |  Owner   | Persistence | Access method |    Size    | Description 
+--------+-------+-------+----------+-------------+---------------+------------+-------------
+ public | test  | table | postgres | permanent   | heap          | 0 bytes    | 
+ public | test2 | table | postgres | permanent   | heap          | 8192 bytes | 
+(2 rows)
+[pg14-repl2] otus> CREATE PUBLICATION pubication_test_pg14_repl2 FOR TABLE test2;
 CREATE PUBLICATION
-[pg14-repl1] otus> CREATE SUBSCRIPTION subscription_test2 CONNECTION 'host=pg14-repl2 user=postgres password=postgres dbname=otus' PUBLICATION publication_test2 WITH (copy_data = true);
-NOTICE:  created replication slot "subscription_test2" on publisher
+[pg14-repl2] otus> \dRp+
+                   Publication pubication_test_pg14_repl2
+  Owner   | All tables | Inserts | Updates | Deletes | Truncates | Via root 
+----------+------------+---------+---------+---------+-----------+----------
+ postgres | f          | t       | t       | t       | t         | f
+Tables:
+    "public.test2"
+
+[pg14-repl1] postgres> \c otus
+[pg14-repl1] otus> CREATE PUBLICATION pubication_test_pg14_repl1 FOR TABLE test;
+CREATE PUBLICATION
+[pg14-repl1] otus> CREATE SUBSCRIPTION subscription_test2_pg14_repl1 CONNECTION 'host=pg14-repl2 user=postgres password=postgres dbname=otus' PUBLICATION pubication_test_pg14_repl2 WITH (copy_data = true);
+NOTICE:  created replication slot "subscription_test2_pg14_repl1" on publisher
 CREATE SUBSCRIPTION
 
 [pg14-repl1] otus> \dRp+
-                        Publication pubication_test
+                   Publication pubication_test_pg14_repl1
   Owner   | All tables | Inserts | Updates | Deletes | Truncates | Via root 
 ----------+------------+---------+---------+---------+-----------+----------
  postgres | f          | t       | t       | t       | t         | f
@@ -102,33 +119,28 @@ Tables:
     "public.test"
 
 [pg14-repl1] otus> \dRs+
-                                                                         List of subscriptions
-        Name        |  Owner   | Enabled |     Publication     | Binary | Streaming | Synchronous commit |                          Conninfo                           
---------------------+----------+---------+---------------------+--------+-----------+--------------------+-------------------------------------------------------------
- subscription_test2 | postgres | t       | {publication_test2} | f      | f         | off                | host=pg14-repl2 user=postgres password=postgres dbname=otus
+                                                                                   List of subscriptions
+             Name              |  Owner   | Enabled |         Publication          | Binary | Streaming | Synchronous commit |                          Conninfo                           
+-------------------------------+----------+---------+------------------------------+--------+-----------+--------------------+-------------------------------------------------------------
+ subscription_test2_pg14_repl1 | postgres | t       | {pubication_test_pg14_repl2} | f      | f         | off                | host=pg14-repl2 user=postgres password=postgres dbname=otus
 (1 row)
+
+
 ```
-На ВМ pg14-repl2 создаем публикацию таблицы test2 и подписываемся на публикацию таблицы test с ВМ pg14-repl1.
+
+На ВМ pg14-repl2 создаём подписку на публикацию таблицы test с ВМ pg14-repl1.
 ```console
-[pg14-repl2] otus> CREATE PUBLICATION publication_test2 FOR TABLE test2;
-CREATE PUBLICATION
-[pg14-repl2] otus> \dRp+
-                       Publication publication_test2
-  Owner   | All tables | Inserts | Updates | Deletes | Truncates | Via root 
-----------+------------+---------+---------+---------+-----------+----------
- postgres | f          | t       | t       | t       | t         | f
-Tables:
-    "public.test2"
-[pg14-repl2] otus> CREATE SUBSCRIPTION subscription_test CONNECTION 'host=pg14-repl1 user=postgres password=postgres dbname=otus' PUBLICATION publication_test WITH (copy_data = true);
-NOTICE:  created replication slot "subscription_test" on publisher
+[pg14-repl2] otus> CREATE SUBSCRIPTION subscription_test_pg14_repl2 CONNECTION 'host=pg14-repl1 user=postgres password=postgres dbname=otus' PUBLICATION pubication_test_pg14_repl1 WITH (copy_data = true);
+NOTICE:  created replication slot "subscription_test_pg14_repl2" on publisher
 CREATE SUBSCRIPTION
 [pg14-repl2] otus> \dRs+
-                                                                        List of subscriptions
-       Name        |  Owner   | Enabled |    Publication     | Binary | Streaming | Synchronous commit |                          Conninfo                           
--------------------+----------+---------+--------------------+--------+-----------+--------------------+-------------------------------------------------------------
- subscription_test | postgres | t       | {publication_test} | f      | f         | off                | host=pg14-repl1 user=postgres password=postgres dbname=otus
+                                                                                  List of subscriptions
+             Name             |  Owner   | Enabled |         Publication          | Binary | Streaming | Synchronous commit |                          Conninfo                           
+------------------------------+----------+---------+------------------------------+--------+-----------+--------------------+-------------------------------------------------------------
+ subscription_test_pg14_repl2 | postgres | t       | {pubication_test_pg14_repl1} | f      | f         | off                | host=pg14-repl1 user=postgres password=postgres dbname=otus
 (1 row)
 ```
+
 ВМ pg14-repl3 используем как реплику для чтения и бэкапов, подписавшись на публикуемые таблицы из ВМ pg14-repl1 и pg14-repl2 )
 ```console
 [pg14-repl3] postgres> ALTER SYSTEM SET wal_level = 'logical';
@@ -144,113 +156,114 @@ CREATE TABLE
 [pg14-repl3] otus> CREATE TABLE test2 (k2 serial primary key);
 CREATE TABLE
 
-[pg14-repl3] otus> CREATE SUBSCRIPTION subscription_test_repl3 CONNECTION 'host=pg14-repl1 user=postgres password=postgres dbname=otus' PUBLICATION publication_test WITH (copy_data = true);
-NOTICE:  created replication slot "subscription_test_repl3" on publisher
+[pg14-repl3] otus> CREATE SUBSCRIPTION subscription_test_pg14_repl3 CONNECTION 'host=pg14-repl1 user=postgres password=postgres dbname=otus' PUBLICATION pubication_test_pg14_repl1 WITH (copy_data = true);
+NOTICE:  created replication slot "subscription_test_pg14_repl3" on publisher
 CREATE SUBSCRIPTION
-[pg14-repl3] otus> CREATE SUBSCRIPTION subscription_test2_repl3 CONNECTION 'host=pg14-repl2 user=postgres password=postgres dbname=otus' PUBLICATION publication_test2 WITH (copy_data = true);
-NOTICE:  created replication slot "subscription_test2_repl3" on publisher
+[pg14-repl3] otus> CREATE SUBSCRIPTION subscription_test2_pg14_repl3 CONNECTION 'host=pg14-repl2 user=postgres password=postgres dbname=otus' PUBLICATION pubication_test_pg14_repl2 WITH (copy_data = true);
+NOTICE:  created replication slot "subscription_test2_pg14_repl3" on publisher
 CREATE SUBSCRIPTION
 
 [pg14-repl3] otus> \dRs+
-                                                                            List of subscriptions
-           Name           |  Owner   | Enabled |     Publication     | Binary | Streaming | Synchronous commit |                          Conninfo                           
---------------------------+----------+---------+---------------------+--------+-----------+--------------------+-------------------------------------------------------------
- subscription_test2_repl3 | postgres | t       | {publication_test2} | f      | f         | off                | host=pg14-repl2 user=postgres password=postgres dbname=otus
- subscription_test_repl3  | postgres | t       | {publication_test}  | f      | f         | off                | host=pg14-repl1 user=postgres password=postgres dbname=otus
+                                                                                   List of subscriptions
+             Name              |  Owner   | Enabled |         Publication          | Binary | Streaming | Synchronous commit |                          Conninfo                           
+-------------------------------+----------+---------+------------------------------+--------+-----------+--------------------+-------------------------------------------------------------
+ subscription_test2_pg14_repl3 | postgres | t       | {pubication_test_pg14_repl2} | f      | f         | off                | host=pg14-repl2 user=postgres password=postgres dbname=otus
+ subscription_test_pg14_repl3  | postgres | t       | {pubication_test_pg14_repl1} | f      | f         | off                | host=pg14-repl1 user=postgres password=postgres dbname=otus
 (2 rows)
 ```
 Смотрим статус репликации на pg14-repl1 и pg14-repl2:
 ```console
 [pg14-repl1] otus> SELECT * FROM pg_stat_replication\gx
 -[ RECORD 1 ]----+------------------------------
-pid              | 1351
+pid              | 18917
 usesysid         | 10
 usename          | postgres
-application_name | subscription_test
+application_name | subscription_test_pg14_repl2
 client_addr      | 10.128.0.21
 client_hostname  | 
-client_port      | 44226
-backend_start    | 2021-11-20 04:24:47.622806+00
+client_port      | 45572
+backend_start    | 2021-11-20 11:34:48.036313+00
 backend_xmin     | 
 state            | streaming
-sent_lsn         | 0/1797F98
-write_lsn        | 0/1797F98
-flush_lsn        | 0/1797F98
-replay_lsn       | 0/1797F98
+sent_lsn         | 0/177A748
+write_lsn        | 0/177A748
+flush_lsn        | 0/177A748
+replay_lsn       | 0/177A748
 write_lag        | 
 flush_lag        | 
 replay_lag       | 
 sync_priority    | 0
 sync_state       | async
-reply_time       | 2021-11-20 04:48:09.119132+00
+reply_time       | 2021-11-20 11:43:45.876266+00
 -[ RECORD 2 ]----+------------------------------
-pid              | 1445
+pid              | 18936
 usesysid         | 10
 usename          | postgres
-application_name | subscription_test_repl3
+application_name | subscription_test_pg14_repl3
 client_addr      | 10.128.0.22
 client_hostname  | 
-client_port      | 34162
-backend_start    | 2021-11-20 04:43:48.821449+00
+client_port      | 35552
+backend_start    | 2021-11-20 11:41:25.662844+00
 backend_xmin     | 
 state            | streaming
-sent_lsn         | 0/1797F98
-write_lsn        | 0/1797F98
-flush_lsn        | 0/1797F98
-replay_lsn       | 0/1797F98
+sent_lsn         | 0/177A748
+write_lsn        | 0/177A748
+flush_lsn        | 0/177A748
+replay_lsn       | 0/177A748
 write_lag        | 
 flush_lag        | 
 replay_lag       | 
 sync_priority    | 0
 sync_state       | async
-reply_time       | 2021-11-20 04:48:09.123955+00
+reply_time       | 2021-11-20 11:43:45.895077+00
 
 [pg14-repl2] otus> SELECT * FROM pg_stat_replication\gx
 -[ RECORD 1 ]----+------------------------------
-pid              | 1226
+pid              | 4362
 usesysid         | 10
 usename          | postgres
-application_name | subscription_test2
+application_name | subscription_test2_pg14_repl1
 client_addr      | 10.128.0.19
 client_hostname  | 
-client_port      | 56562
-backend_start    | 2021-11-20 04:06:37.775478+00
+client_port      | 57688
+backend_start    | 2021-11-20 11:30:00.266534+00
 backend_xmin     | 
 state            | streaming
-sent_lsn         | 0/1779EC8
-write_lsn        | 0/1779EC8
-flush_lsn        | 0/1779EC8
-replay_lsn       | 0/1779EC8
+sent_lsn         | 0/177C4A8
+write_lsn        | 0/177C4A8
+flush_lsn        | 0/177C4A8
+replay_lsn       | 0/177C4A8
 write_lag        | 
 flush_lag        | 
 replay_lag       | 
 sync_priority    | 0
 sync_state       | async
-reply_time       | 2021-11-20 04:48:31.752371+00
+reply_time       | 2021-11-20 11:46:47.621421+00
 -[ RECORD 2 ]----+------------------------------
-pid              | 1447
+pid              | 4441
 usesysid         | 10
 usename          | postgres
-application_name | subscription_test2_repl3
+application_name | subscription_test2_pg14_repl3
 client_addr      | 10.128.0.22
 client_hostname  | 
-client_port      | 49138
-backend_start    | 2021-11-20 04:44:11.412867+00
+client_port      | 50534
+backend_start    | 2021-11-20 11:42:47.304531+00
 backend_xmin     | 
 state            | streaming
-sent_lsn         | 0/1779EC8
-write_lsn        | 0/1779EC8
-flush_lsn        | 0/1779EC8
-replay_lsn       | 0/1779EC8
+sent_lsn         | 0/177C4A8
+write_lsn        | 0/177C4A8
+flush_lsn        | 0/177C4A8
+replay_lsn       | 0/177C4A8
 write_lag        | 
 flush_lag        | 
 replay_lag       | 
 sync_priority    | 0
 sync_state       | async
-reply_time       | 2021-11-20 04:48:31.846925+00
+reply_time       | 2021-11-20 11:46:47.645259+00
 ```
 
-Для реализации высокой доступности на pg14-repl4 настроим физическую репликацию с pg14-repl3 при помощи штатной утилиты pg_basebackup, добавив разрешающее правило в pg_hba.conf на pg14-repl3:
+Для реализации высокой доступности на pg14-repl4 настроим физическую репликацию с pg14-repl3 при помощи штатной утилиты pg_basebackup, 
+добавив разрешающее правило в pg_hba.conf на pg14-repl3:
 ```console
 [pg14-repl3] otus> \! echo "host replication all 10.128.0.0/24 scram-sha-256" >> /var/lib/pgsql/14/data/pg_hba.conf
 [pg14-repl3] otus> select pg_reload_conf();
