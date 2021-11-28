@@ -379,7 +379,7 @@ otus=> select count(*) from taxi_trips;
 
 Time: 332665.666 ms (05:32.666)
 ```
-Выполняем тот же запрос, что и в mysql:
+Выполняем тот же запрос, что и в БД MySQL:
 ```console
 otus=> explain SELECT payment_type, round(sum(tips)/sum(trip_total)*100, 0) + 0 as tips_percent, count(*) AS c
 FROM taxi_trips 
