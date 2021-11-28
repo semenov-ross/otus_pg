@@ -101,6 +101,35 @@ Query OK, 0 rows affected (0.00 sec)
 mysql> FLUSH PRIVILEGES;
 Query OK, 0 rows affected (0.01 sec)
 ```
+Создаём таблицу для загружаемых данных:
+```console
+create table taxi_trips (
+unique_key text, 
+taxi_id text, 
+trip_start_timestamp TIMESTAMP, 
+trip_end_timestamp TIMESTAMP, 
+trip_seconds bigint, 
+trip_miles numeric, 
+pickup_census_tract bigint, 
+dropoff_census_tract bigint, 
+pickup_community_area bigint, 
+dropoff_community_area bigint, 
+fare numeric, 
+tips numeric, 
+tolls numeric, 
+extras numeric, 
+trip_total numeric, 
+payment_type text, 
+company text, 
+pickup_latitude numeric, 
+pickup_longitude numeric, 
+pickup_location text, 
+dropoff_latitude numeric, 
+dropoff_longitude numeric, 
+dropoff_location text
+);
+```
+
 Для возможности загрузки данных из локальных файлов меняем системные параметры и перемонтируем bucket taxi_trips_20211128 в каталог, определённый для загрузки:
 ```console
 mysql> SHOW VARIABLES LIKE "secure_file_priv";
