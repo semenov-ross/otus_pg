@@ -318,7 +318,7 @@ otus=> \dt+
  public | taxi_trips | table | loader | permanent   | heap          | 8192 bytes | 
 (1 row)
 ```
-Перемонтируем bucket, дадим права пользователю loader для использования команды COPY и загрузим данные, подготовленным скриптом:
+Перемонтируем bucket, дадим права пользователю loader для использования команды COPY и загрузим данные подготовленным скриптом:
 ```console
 [root@pg14-bigdata ~]# fusermount -u /var/lib/mysql-files
 [root@pg14-bigdata pgsql]# gcsfuse -o allow_other --dir-mode 777 --file-mode 777 taxi_trips_20211128 /mnt/taxi_trips/
@@ -369,9 +369,58 @@ otus=> \dt+
  public | taxi_trips | table | loader | permanent   | heap          | 9805 MB |
 (1 row)
 
+otus=> \timing on
+Timing is on.
+otus=> select count(*) from taxi_trips;
+  count   
+----------
+ 23407650
+(1 row)
 
+Time: 332665.666 ms (05:32.666)
 ```
 Выполняем тот же запрос, что и в mysql:
 ```console
+otus=> explain SELECT payment_type, round(sum(tips)/sum(trip_total)*100, 0) + 0 as tips_percent, count(*) AS c
+FROM taxi_trips 
+GROUP BY payment_type
+ORDER BY 3;
+                                                  QUERY PLAN
+--------------------------------------------------------------------------------------------------------------
+ Sort  (cost=1450693.65..1450693.67 rows=8 width=47)
+   Sort Key: (count(*))
+   ->  Finalize GroupAggregate  (cost=1450691.23..1450693.53 rows=8 width=47)
+         Group Key: payment_type
+         ->  Gather Merge  (cost=1450691.23..1450693.09 rows=16 width=79)
+               Workers Planned: 2
+               ->  Sort  (cost=1449691.20..1449691.22 rows=8 width=79)
+                     Sort Key: payment_type
+                     ->  Partial HashAggregate  (cost=1449690.96..1449691.08 rows=8 width=79)
+                           Group Key: payment_type
+                           ->  Parallel Seq Scan on taxi_trips  (cost=0.00..1352203.98 rows=9748698 width=17)
+(11 rows)
 
+Time: 16.468 ms
+
+otus=> SELECT payment_type, round(sum(tips)/sum(trip_total)*100, 0) + 0 as tips_percent, count(*) AS c
+FROM taxi_trips
+GROUP BY payment_type
+ORDER BY 3;
+ payment_type | tips_percent |    c
+--------------+--------------+----------
+ Prepaid      |            0 |       76
+ Way2ride     |           15 |       78
+ Pcard        |            3 |     4917
+ Dispute      |            0 |    12835
+ Mobile       |           15 |    32715
+ Prcard       |            1 |    41119
+ Unknown      |            2 |    62569
+ No Charge    |            3 |   111774
+ Credit Card  |           17 |  9706048
+ Cash         |            0 | 13435519
+(10 rows)
+
+Time: 329209.217 ms (05:29.209)
 ```
+По результатм тестировани можно сделать вывод, что скорость загрузки данных в БД PostgreSQL оказалось существено меньше чем в БД MySQL, а скорость выполнения запросов, 
+в которых используется сканирование всей таблицы соизмерима.
