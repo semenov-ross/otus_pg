@@ -1,7 +1,7 @@
 # Работа с большим объемом реальных данных
 ### Разворачиваем и настраиваем БД с большими данными
 
-Для работы используем публичные данные из BigQuery, экпорировав таблицу bigquery-public-data:chicago_taxi_trips.taxi_trips в созданный bucket taxi_trips_20211128:
+Для работы используем публичные данные из BigQuery, экпортировав таблицу bigquery-public-data:chicago_taxi_trips.taxi_trips в созданный bucket taxi_trips_20211128:
 ```console
 [ross@otuspg ~]$ gsutil mb gs://taxi_trips_20211128
 Creating gs://taxi_trips_20211128/...
