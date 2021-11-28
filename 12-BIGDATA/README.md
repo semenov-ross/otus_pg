@@ -92,7 +92,7 @@ Threads: 2  Questions: 18  Slow queries: 0  Opens: 133  Flush tables: 3  Open ta
 mysql> CREATE DATABASE otus;
 Query OK, 1 row affected (0.01 sec)
 
-mysql> CREATE USER 'loader'@'localhost' IDENTIFIED BY '=Vpds+u)H6aW';
+mysql> CREATE USER 'loader'@'localhost' IDENTIFIED BY '=LoaderPassword1';
 Query OK, 0 rows affected (0.01 sec)
 
 mysql> GRANT ALL PRIVILEGES ON otus.* TO 'loader'@'localhost';
@@ -160,6 +160,124 @@ mysql> SET GLOBAL local_infile=1;
 mysql> \q
 [root@pg14-bigdata ~]# mysql --local-infile=1 otus -u loader -p
 
+```
+Создаем для удобства скрипт загрузки и добавляем данные авторизации пользователя loader с помощью утилиты mysql_config_editor:
+```console
+[root@pg14-bigdata ~]# mysql_config_editor set --login-path=loader --host=localhost --user=loader --password
+[root@pg14-bigdata ~]# cat loader_percona.sh 
+#!/bin/bash
+
+for file in /var/lib/mysql-files/taxi_trips_0000000000{00..35}.csv; do
+    echo -e "Processing $file file..."
+    mysql --login-path=loader --local-infile=1 --database=otus \
+    -e 'LOAD DATA LOCAL INFILE '\"$file\"' INTO TABLE taxi_trips FIELDS TERMINATED BY "," LINES TERMINATED BY "\n" IGNORE 1 LINES;'
+done
+
+```
+Загружаем данные:
+```console
+[root@pg14-bigdata ~]# time ./loader_percona.sh
+Processing /var/lib/mysql-files/taxi_trips_000000000000.csv file...
+...
+Processing /var/lib/mysql-files/taxi_trips_000000000035.csv file...
+
+real    32m25.533s
+user    0m3.060s
+sys     0m13.888s
+
+```
+Смотрим статистику:
+```console
+mysql> select count(*) from taxi_trips;
++----------+
+| count(*) |
++----------+
+| 23407650 |
++----------+
+1 row in set (5 min 26.44 sec)
+
+mysql> SELECT * FROM INFORMATION_SCHEMA.INNODB_TABLESPACES WHERE SPACE=4\G
+*************************** 1. row ***************************
+          SPACE: 4
+           NAME: otus/taxi_trips
+           FLAG: 16417
+     ROW_FORMAT: Dynamic
+      PAGE_SIZE: 16384
+  ZIP_PAGE_SIZE: 0
+     SPACE_TYPE: Single
+  FS_BLOCK_SIZE: 4096
+      FILE_SIZE: 10141827072
+ ALLOCATED_SIZE: 10141827072
+AUTOEXTEND_SIZE: 0
+ SERVER_VERSION: 8.0.26
+  SPACE_VERSION: 1
+     ENCRYPTION: N
+          STATE: normal
+1 row in set (0.00 sec)
+
+mysql> SELECT * FROM INFORMATION_SCHEMA.INNODB_DATAFILES WHERE SPACE=4\G
+*************************** 1. row ***************************
+SPACE: 0x34
+ PATH: ./otus/taxi_trips.ibd
+1 row in set (0.01 sec)
+
+mysql> SELECT NAME,FILE_SIZE / ( 1024 * 1024 * 1024 ) AS "Size (Gb)" FROM INFORMATION_SCHEMA.INNODB_TABLESPACES WHERE NAME='otus/taxi_trips';
++-----------------+-----------+
+| NAME            | Size (Gb) |
++-----------------+-----------+
+| otus/taxi_trips |    9.4453 |
++-----------------+-----------+
+1 row in set (0.00 sec)
+```
+Выполняем запросы с операциями группировки и сортировки для оценки времени:
+```console
+[root@pg14-bigdata ~]# mysql --login-path=loader --database=otus
+
+mysql> SELECT payment_type, round(sum(tips)/sum(trip_total)*100, 0) + 0 as tips_percent, count(*) AS c
+FROM `taxi_trips`
+GROUP BY payment_type
+ORDER BY 3;
+
++--------------+--------------+----------+
+| payment_type | tips_percent | c        |
++--------------+--------------+----------+
+| Prepaid      |            0 |       76 |
+| Way2ride     |           15 |       78 |
+| Pcard        |            3 |     4917 |
+| Dispute      |            0 |    12835 |
+| Mobile       |           15 |    32715 |
+| Prcard       |            1 |    41119 |
+| Unknown      |            2 |    62569 |
+| No Charge    |            3 |   111774 |
+| Credit Card  |           17 |  9706048 |
+| Cash         |            0 | 13435519 |
++--------------+--------------+----------+
+10 rows in set (5 min 43.78 sec)
+
+mysql> EXPLAIN SELECT payment_type, round(sum(tips)/sum(trip_total)*100, 0) + 0 as tips_percent, count(*) AS c FROM `taxi_trips` GROUP BY payment_type ORDER BY 3;
++----+-------------+------------+------------+------+---------------+------+---------+------+----------+----------+---------------------------------+
+| id | select_type | table      | partitions | type | possible_keys | key  | key_len | ref  | rows     | filtered | Extra                           |
++----+-------------+------------+------------+------+---------------+------+---------+------+----------+----------+---------------------------------+
+|  1 | SIMPLE      | taxi_trips | NULL       | ALL  | NULL          | NULL | NULL    | NULL | 22274793 |   100.00 | Using temporary; Using filesort |
++----+-------------+------------+------------+------+---------------+------+---------+------+----------+----------+---------------------------------+
+1 row in set, 1 warning (0.01 sec)
+```
+Создаём новый кластер PostgresSQL 14:
+```console
+[root@pg14-bigdata ~]# yum -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+[root@pg14-bigdata ~]# yum -y install postgresql14 postgresql14-server
+[root@pg14-bigdata ~]# /usr/pgsql-14/bin/postgresql-14-setup initdb
+Initializing database ... OK
+[root@pg14-bigdata ~]# systemctl enable --now postgresql-14.service
+-bash-4.2$ psql 
+psql (14.1)
+Type "help" for help.
+postgres=# CREATE DATABASE otus;
+CREATE DATABASE
+postgres=# CREATE USER loader WITH PASSWORD 'password' INHERIT;
+CREATE ROLE
+postgres=# ALTER DATABASE otus OWNER TO loader;
+ALTER DATABASE
 ```
 
 ```console
