@@ -231,7 +231,7 @@ mysql> SELECT NAME,FILE_SIZE / ( 1024 * 1024 * 1024 ) AS "Size (Gb)" FROM INFORM
 +-----------------+-----------+
 1 row in set (0.00 sec)
 ```
-Выполняем запросы с операциями группировки и сортировки для оценки времени:
+Выполняем запрос с операциями группировки и сортировки для оценки времени:
 ```console
 [root@pg14-bigdata ~]# mysql --login-path=loader --database=otus
 
@@ -343,9 +343,35 @@ bash-4.2$ time ./loader_pg.sh
 Processing /mnt/taxi_trips/taxi_trips_000000000000.csv file...
 COPY 653941
 ...
+Processing /mnt/taxi_trips/taxi_trips_000000000035.csv file...
+COPY 657503
+
+real    16m29.665s
+user    0m0.145s
+sys     0m0.183s
+```
+Смотрим статистику:
+```console
+-bash-4.2$ psql otus -U loader
+psql (14.1)
+Type "help" for help.
+otus=> \l+ otus
+                                               List of databases
+ Name | Owner  | Encoding |   Collate   |    Ctype    | Access privileges |  Size   | Tablespace | Description 
+------+--------+----------+-------------+-------------+-------------------+---------+------------+-------------
+ otus | loader | UTF8     | en_US.UTF-8 | en_US.UTF-8 |                   | 9814 MB | pg_default |
+(1 row)
+
+otus=> \dt+
+                                     List of relations
+ Schema |    Name    | Type  | Owner  | Persistence | Access method |  Size   | Description 
+--------+------------+-------+--------+-------------+---------------+---------+-------------
+ public | taxi_trips | table | loader | permanent   | heap          | 9805 MB |
+(1 row)
+
 
 ```
-
+Выполняем тот же запрос, что и в mysql:
 ```console
 
 ```
