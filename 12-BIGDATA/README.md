@@ -141,11 +141,13 @@ mysql> SHOW VARIABLES LIKE "secure_file_priv";
 1 row in set (0.01 sec)
 
 [root@pg14-bigdata ~]# fusermount -u /mnt/taxi_trips
-[root@pg14-bigdata ~]# gcsfuse taxi_trips_20211126 /var/lib/mysql-files
+[root@pg14-bigdata ~]# gcsfuse taxi_trips_20211128 /var/lib/mysql-files
+Using mount point: /var/lib/mysql-files
 Using mount point: /var/lib/mysql-files
 Opening GCS connection...
 Opening bucket...
-daemonize.Run: readFromProcess: sub-process: mountWithArgs: mountWithConn: setUpBucket: OpenBucket: Unknown bucket "taxi_trips_20211126"
+Mounting file system...
+File system has been successfully mounted.
 
 [root@pg14-bigdata ~]# mysql -p
 mysql> SHOW GLOBAL VARIABLES LIKE 'local_infile';
@@ -279,6 +281,71 @@ CREATE ROLE
 postgres=# ALTER DATABASE otus OWNER TO loader;
 ALTER DATABASE
 ```
+Создаем тестовую таблицу в БД otus
+```console
+-bash-4.2$ psql otus -U loader
+otus=> create table taxi_trips (
+otus(> unique_key text, 
+otus(> taxi_id text, 
+otus(> trip_start_timestamp TIMESTAMP, 
+otus(> trip_end_timestamp TIMESTAMP, 
+otus(> trip_seconds bigint, 
+otus(> trip_miles numeric, 
+otus(> pickup_census_tract bigint, 
+otus(> dropoff_census_tract bigint, 
+otus(> pickup_community_area bigint, 
+otus(> dropoff_community_area bigint, 
+otus(> fare numeric, 
+otus(> tips numeric, 
+otus(> tolls numeric, 
+otus(> extras numeric, 
+otus(> trip_total numeric, 
+otus(> payment_type text, 
+otus(> company text, 
+otus(> pickup_latitude numeric, 
+otus(> pickup_longitude numeric, 
+otus(> pickup_location text, 
+otus(> dropoff_latitude numeric, 
+otus(> dropoff_longitude numeric, 
+otus(> dropoff_location text
+otus(> );
+CREATE TABLE
+
+otus=> \dt+
+                                       List of relations
+ Schema |    Name    | Type  | Owner  | Persistence | Access method |    Size    | Description 
+--------+------------+-------+--------+-------------+---------------+------------+-------------
+ public | taxi_trips | table | loader | permanent   | heap          | 8192 bytes | 
+(1 row)
+```
+Перемонтируем bucket, дадим права пользователю loader для использования команды COPY и загрузим данные, подготовленным скриптом:
+```console
+[root@pg14-bigdata ~]# fusermount -u /var/lib/mysql-files
+[root@pg14-bigdata pgsql]# gcsfuse -o allow_other --dir-mode 777 --file-mode 777 taxi_trips_20211128 /mnt/taxi_trips/
+Using mount point: /mnt/taxi_trips
+Opening GCS connection...
+Opening bucket...
+Mounting file system...
+File system has been successfully mounted.
+
+postgres=# GRANT pg_read_server_files TO loader;
+GRANT ROLE
+
+-bash-4.2$ cat loader_pg.sh 
+#!/bin/bash
+
+for file in /mnt/taxi_trips/taxi_trips_0000000000{00..35}.csv; do
+    echo -e "Processing $file file..."
+    psql otus -U loader -c "COPY taxi_trips(unique_key, taxi_id, trip_start_timestamp, trip_end_timestamp, trip_seconds, trip_miles, pickup_census_tract, dropoff_census_tract, pickup_community_area, dropoff_community_area, fare, tips, tolls, extras, trip_total, payment_type, company, pickup_latitude, pickup_longitude, pickup_location, dropoff_latitude, dropoff_longitude, dropoff_location) FROM '$file' DELIMITER ',' CSV HEADER;";
+done
+
+bash-4.2$ time ./loader_pg.sh 
+Processing /mnt/taxi_trips/taxi_trips_000000000000.csv file...
+COPY 653941
+...
+
+```
 
 ```console
+
 ```
