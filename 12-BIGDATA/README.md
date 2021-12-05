@@ -27,7 +27,20 @@ gcloud compute instances create pg14-bigdata ... size=50 ...
 ```console
 [ross@otuspg ~]$ gcloud compute ssh pg14-bigdata
 
-[ross@otuspg ~]$ yum install gcsfuse -y
+[root@pg14-bigdata ~]# sudo tee /etc/yum.repos.d/gcsfuse.repo > /dev/null <<EOF
+[gcsfuse]
+name=gcsfuse (packages.cloud.google.com)
+baseurl=https://packages.cloud.google.com/yum/repos/gcsfuse-el7-x86_64
+enabled=1
+gpgcheck=1
+repo_gpgcheck=0
+gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
+       https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+EOF
+
+[root@pg14-bigdata ~]# yum install gcsfuse -y
+
+[root@pg14-bigdata ~]# mkdir /mnt/taxi_trips
 
 [root@pg14-bigdata ~]# gcsfuse taxi_trips_20211128 /mnt/taxi_trips
 Using mount point: /mnt/taxi_trips
