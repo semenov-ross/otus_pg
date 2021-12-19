@@ -8,7 +8,7 @@ postgres=# CREATE DATABASE dvdrental;
 CREATE DATABASE
 pg_restore -U postgres -d dvdrental dvd
 ```
-Постоим индекс в таблице film по полю rating для ускорения выборки по этому полю:
+Постоим индекс в таблице film по полю rating(Рейтинговая система MPAA) для ускорения выборки по этому полю:
 ```console
 dvdrental=# explain select * from film where rating = 'G';
                        QUERY PLAN
@@ -26,6 +26,27 @@ dvdrental=# explain select * from film where rating = 'G';
    ->  Bitmap Index Scan on film_rating_idx  (cost=0.00..5.49 rows=178 width=0)
          Index Cond: (rating = 'G'::mpaa_rating)
 (4 rows)
+```
+Для добавления полнотекстового поиска в таблице film, создадим колонку description_full c типом tsvector и построим по ней индекс:
+```console
+dvdrental=# ALTER TABLE film ADD COLUMN description_full tsvector;
+ALTER TABLE
+dvdrental=# UPDATE film SET description_full=to_tsvector(description);
+UPDATE 1000
+dvdrental=# CREATE INDEX ON film USING gin (description_full);
+CREATE INDEX
+
+dvdrental=# EXPLAIN SELECT description FROM film WHERE description_full @@ to_tsquery('Beautiful');
+                                       QUERY PLAN                                        
+-----------------------------------------------------------------------------------------
+ Bitmap Heap Scan on film  (cost=8.58..105.87 rows=42 width=94)
+   Recheck Cond: (description_full @@ to_tsquery('Beautiful'::text))
+   ->  Bitmap Index Scan on film_description_full_idx  (cost=0.00..8.56 rows=42 width=0)
+         Index Cond: (description_full @@ to_tsquery('Beautiful'::text))
+(4 rows)
+```
+
+```console
 ```
 
 ```console
