@@ -48,7 +48,7 @@ dvdrental=# EXPLAIN SELECT description FROM film WHERE description_full @@ to_ts
 Создадим индекс в таблице payment на поле с функцией, для подсчёта платежей за определённую дату:
 ```console
 dvdrental=# explain select sum(amount) from payment where date(payment_date)='2007-02-19';
-                           QUERY PLAN                           
+                           QUERY PLAN
 ----------------------------------------------------------------
  Aggregate  (cost=327.12..327.13 rows=1 width=32)
    ->  Seq Scan on payment  (cost=0.00..326.94 rows=73 width=6)
@@ -59,7 +59,7 @@ dvdrental=# CREATE INDEX ON payment (date(payment_date));
 CREATE INDEX
 
 dvdrental=# explain select sum(amount) from payment where date(payment_date)='2007-02-19';
-                                      QUERY PLAN                                      
+                                      QUERY PLAN
 --------------------------------------------------------------------------------------
  Aggregate  (cost=108.38..108.39 rows=1 width=32)
    ->  Bitmap Heap Scan on payment  (cost=4.85..108.20 rows=73 width=6)
@@ -68,6 +68,27 @@ dvdrental=# explain select sum(amount) from payment where date(payment_date)='20
                Index Cond: (date(payment_date) = '2007-02-19'::date)
 (5 rows)
 
+```
+Создадим индекс по двум полям для выборки из таблицы film:
+```console
+dvdrental=# explain select count(*) from film where rating='G' and length>50;
+                           QUERY PLAN
+-----------------------------------------------------------------
+ Aggregate  (cost=141.43..141.44 rows=1 width=8)
+   ->  Seq Scan on film  (cost=0.00..141.00 rows=171 width=0)
+         Filter: ((length > 50) AND (rating = 'G'::mpaa_rating))
+(3 rows)
+
+dvdrental=# CREATE INDEX ON film (rating,length);
+CREATE INDEX
+
+dvdrental=# explain select count(*) from film where rating='G' and length>50;
+                                           QUERY PLAN
+------------------------------------------------------------------------------------------------
+ Aggregate  (cost=8.12..8.13 rows=1 width=8)
+   ->  Index Only Scan using film_rating_length_idx on film  (cost=0.28..7.70 rows=171 width=0)
+         Index Cond: ((rating = 'G'::mpaa_rating) AND (length > 50))
+(3 rows)
 ```
 
 ```console
