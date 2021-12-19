@@ -8,6 +8,8 @@ postgres=# CREATE DATABASE dvdrental;
 CREATE DATABASE
 pg_restore -U postgres -d dvdrental dvd
 ```
+### 1 Вариант
+
 Постоим индекс в таблице film по полю rating для ускорения выборки по этому полю:
 ```console
 dvdrental=# explain select * from film where rating = 'G';
@@ -91,8 +93,48 @@ dvdrental=# explain select count(*) from film where rating='G' and length>50;
 (3 rows)
 ```
 
+### 2 Вариант
+
+Объеденим таблиц film, film_actor, actor для получения названия фильма и актёров:
 ```console
+SELECT f.title, a.first_name || ' ' || a.last_name actor_fl
+FROM film f
+INNER JOIN film_actor fa ON f.film_id = fa.film_id
+INNER JOIN actor a ON fa.actor_id = a.actor_id
+ORDER BY 1
+```
+Используем левостороннее объединение для получения категории фильма:
+```console
+SELECT f.title, c."name"
+FROM film f 
+LEFT JOIN film_category fc ON fc.film_id = f.film_id 
+LEFT JOIN category c ON c.category_id = fc.category_id
+```
+Кросс объединение таблиц категорий фильмов и именами категорий:
+```console
+SELECT *
+FROM film_category fc 
+CROSS JOIN category c
+WHERE fc.category_id = c.category_id;
+```
+Используем полное объединение для получения категории фильма:
+```console
+SELECT f.title, c."name" 
+FROM film f 
+FULL JOIN film_category fc ON f.film_id = fc.film_id 
+FULL JOIN category c ON fc.category_id = c.category_id 
 ```
 
+Используем разные типы объединения:
 ```console
+SELECT f.title, a.first_name || ' ' || a.last_name actor_fl, c."name" category, l."name" language 
+FROM film f
+JOIN film_actor fa ON f.film_id = fa.film_id
+JOIN actor a ON fa.actor_id = a.actor_id
+LEFT JOIN film_category fc ON fc.film_id = f.film_id
+LEFT JOIN category c ON c.category_id = fc.category_id
+FULL JOIN "language" l ON l.language_id = f.language_id 
+WHERE f.film_id NOTNULL
+ORDER BY 1
 ```
+Структура таблиц - https://www.postgresqltutorial.com/postgresql-sample-database/
