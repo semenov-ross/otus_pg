@@ -8,7 +8,7 @@ postgres=# CREATE DATABASE dvdrental;
 CREATE DATABASE
 pg_restore -U postgres -d dvdrental dvd
 ```
-Постоим индекс в таблице film по полю rating(Рейтинговая система MPAA) для ускорения выборки по этому полю:
+Постоим индекс в таблице film по полю rating для ускорения выборки по этому полю:
 ```console
 dvdrental=# explain select * from film where rating = 'G';
                        QUERY PLAN
@@ -44,6 +44,30 @@ dvdrental=# EXPLAIN SELECT description FROM film WHERE description_full @@ to_ts
    ->  Bitmap Index Scan on film_description_full_idx  (cost=0.00..8.56 rows=42 width=0)
          Index Cond: (description_full @@ to_tsquery('Beautiful'::text))
 (4 rows)
+```
+Создадим индекс в таблице payment на поле с функцией, для подсчёта платежей за определённую дату:
+```console
+dvdrental=# explain select sum(amount) from payment where date(payment_date)='2007-02-19';
+                           QUERY PLAN                           
+----------------------------------------------------------------
+ Aggregate  (cost=327.12..327.13 rows=1 width=32)
+   ->  Seq Scan on payment  (cost=0.00..326.94 rows=73 width=6)
+         Filter: (date(payment_date) = '2007-02-19'::date)
+(3 rows)
+
+dvdrental=# CREATE INDEX ON payment (date(payment_date));
+CREATE INDEX
+
+dvdrental=# explain select sum(amount) from payment where date(payment_date)='2007-02-19';
+                                      QUERY PLAN                                      
+--------------------------------------------------------------------------------------
+ Aggregate  (cost=108.38..108.39 rows=1 width=32)
+   ->  Bitmap Heap Scan on payment  (cost=4.85..108.20 rows=73 width=6)
+         Recheck Cond: (date(payment_date) = '2007-02-19'::date)
+         ->  Bitmap Index Scan on payment_date_idx  (cost=0.00..4.83 rows=73 width=0)
+               Index Cond: (date(payment_date) = '2007-02-19'::date)
+(5 rows)
+
 ```
 
 ```console
