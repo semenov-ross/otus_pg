@@ -8,7 +8,7 @@ postgres=# CREATE DATABASE dvdrental;
 CREATE DATABASE
 pg_restore -U postgres -d dvdrental dvd
 ```
-### 1 Вариант
+#### 1 Вариант
 
 Постоим индекс в таблице film по полю rating для ускорения выборки по этому полю:
 ```console
@@ -93,7 +93,7 @@ dvdrental=# explain select count(*) from film where rating='G' and length>50;
 (3 rows)
 ```
 
-### 2 Вариант
+#### 2 Вариант
 
 Объеденим таблиц film, film_actor, actor для получения названия фильма и актёров:
 ```console
