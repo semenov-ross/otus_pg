@@ -14,6 +14,9 @@
 -bash-4.2$ unzip demo-big.zip
 -bash-4.2$ psql < demo-big-20170815.sql
 ```
+Диаграмма схемы Bookings:
+![bookings](https://raw.githubusercontent.com/semenov-ross/otus_pg/master/19-PARTITIONING/demodb-bookings-schema.svg)
+
 Просмотрим таблицы БД demo:
 ```console
 -bash-4.2$ psql
