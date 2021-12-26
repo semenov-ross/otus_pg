@@ -14,9 +14,23 @@
 -bash-4.2$ unzip demo-big.zip
 -bash-4.2$ psql < demo-big-20170815.sql
 ```
-
+Просмотрим таблицы БД demo:
 ```console
-
+-bash-4.2$ psql
+postgres=# \c demo
+demo=# \dt+
+                                                List of relations
+  Schema  |      Name       | Type  |  Owner   | Persistence | Access method |  Size  |        Description        
+----------+-----------------+-------+----------+-------------+---------------+--------+---------------------------
+ bookings | aircrafts_data  | table | postgres | permanent   | heap          | 16 kB  | Aircrafts (internal data)
+ bookings | airports_data   | table | postgres | permanent   | heap          | 56 kB  | Airports (internal data)
+ bookings | boarding_passes | table | postgres | permanent   | heap          | 455 MB | Boarding passes
+ bookings | bookings        | table | postgres | permanent   | heap          | 105 MB | Bookings
+ bookings | flights         | table | postgres | permanent   | heap          | 21 MB  | Flights
+ bookings | seats           | table | postgres | permanent   | heap          | 96 kB  | Seats
+ bookings | ticket_flights  | table | postgres | permanent   | heap          | 547 MB | Flight segment
+ bookings | tickets         | table | postgres | permanent   | heap          | 386 MB | Tickets
+(8 rows)
 ```
 
 ```console
