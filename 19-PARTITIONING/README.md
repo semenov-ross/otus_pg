@@ -43,7 +43,7 @@ demo=# explain analyze select count(*),a.city ->> lang() AS city,a.airport_name 
  Execution Time: 132.453 ms
 (19 rows)
 ```
-Рассмотрим возможность уменьшения времени выполнения запроса, путём создания партиционированной таблицы по диапазону дат.  
+Рассмотрим возможность уменьшения времени выполнения запроса путём создания партиционированной таблицы по диапазону дат.  
 Создадим таблицу bookings.flights_sd партиционированную по полю scheduled_departure:
 ```console
 CREATE TABLE bookings.flights_sd (
